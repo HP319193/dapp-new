@@ -113,58 +113,159 @@
 
         /* Responsive Design */
         @media (max-width: 768px) {
-            .container {
-                flex-direction: column;
-                align-items: center;
+            .side {
+                width: 70px; /* Compact sidebar */
+                padding: 10px 5px;
             }
-
-            table, .form-container {
-                width: 100%;
+    
+            .side h3 {
+                font-size: 18px; /* Smaller logo */
+                margin-bottom: 10px;
             }
-
-            th, td {
+    
+            .side button, .side a {
+                padding: 10px;
+                text-align: center; /* Center text for narrow sidebar */
                 font-size: 14px;
             }
-
-            button {
-                width: 100%;
+    
+            .main {
+                margin-left: 80px; /* Adjust main margin */
             }
+        }
+    
+        @media (max-width: 576px) {
+            .side {
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-around;
+                padding: 10px;
+                box-shadow: none; /* Remove shadow for mobile */
+            }
+    
+            .main {
+                margin-left: 0;
+            }
+        }
+        /* Sidebar styling */
+        .side {
+            width: 270px; /* Fixed width for sidebar */
+            background-color: #1f2937; /* Elegant dark gray-blue */
+            color: #ffffff;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%; /* Full height */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3); /* Depth effect */
+            padding: 20px 10px;
+            transition: all 0.3s ease; /* Smooth transition for interactions */
+        }
+    
+        /* Sidebar brand/logo area */
+        .side h3 {
+            font-size: 24px;
+            font-weight: bold;
+            color: #10b981; /* Modern green highlight */
+            text-align: center;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5); /* Glow effect */
+        }
+    
+        /* Navigation buttons and links */
+        .side button, .side a {
+            display: block;
+            margin: 10px 0;
+            padding: 15px 20px;
+            font-size: 16px;
+            font-weight: 500;
+            color: #ffffff;
+            background-color: transparent;
+            border: none;
+            text-align: left;
+            text-decoration: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+    
+        .side button:hover, .side a:hover {
+            background-color: #10b981; /* Bright green hover */
+            color: #1f2937; /* Contrast text on hover */
+            box-shadow: 0 4px 8px rgba(16, 185, 129, 0.5); /* Glow on hover */
+            transform: translateX(10px); /* Subtle slide animation */
+        }
+    
+        /* Sidebar footer (optional logout or info) */
+        .side .footer {
+            margin-top: auto;
+            text-align: center;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6); /* Faded text for footer */
+        }
+    
+        .side .footer a {
+            color: #10b981;
+            text-decoration: none;
+        }
+    
+        .side .footer a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 
 <body>
-    <h1>User Management</h1>
-    <div class="container">
+    <div class="side">
+        <!-- Branding or logo -->
+               <a href='/dashboard'>Dashboard</a>
+               <a href='/metrics'>Metrics</a>
+               <a href='/users'>Users</a>
+               <a href="/logout">Logout</a>
+               <div class="footer">
+                   <p>&copy; 2024 ESG Reports</p>
+                   <a href="/help">Help Center</a>
+               </div>
+           </div>
+    <div class='main'>
+        <h1>User Management</h1>
+        <div class="container">
         <!-- User Table -->
-        <div>
-            <h2>User List</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Username</th>
-                        <th>Password</th>
-                        <th>Is Admin</th>
-                    </tr>
-                </thead>
-                <tbody id="user-table"></tbody>
-            </table>
-        </div>
+            <div>
+                <h2>User List</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Password</th>
+                            <th>Is Admin</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-table"></tbody>
+                </table>
+            </div>
 
-        <!-- Create Account Section -->
-        <div>
-            <h2>Create Account</h2>
-            <div class="form-container">
-                <label for="new-username">Username:</label>
-                <input type="text" id="new-username" placeholder="Enter username">
+            <!-- Create Account Section -->
+            <div>
+                <h2>Create Account</h2>
+                <div class="form-container">
+                    <label for="new-username">Username:</label>
+                    <input type="text" id="new-username" placeholder="Enter username">
 
-                <label for="new-password">Password:</label>
-                <input type="password" id="new-password" placeholder="Enter password">
+                    <label for="new-password">Password:</label>
+                    <input type="password" id="new-password" placeholder="Enter password">
 
-                <label for="confirm-password">Confirm Password:</label>
-                <input type="password" id="confirm-password" placeholder="Confirm password">
+                    <label for="confirm-password">Confirm Password:</label>
+                    <input type="password" id="confirm-password" placeholder="Confirm password">
 
-                <button id="save-button">Save</button>
+                    <button id="save-button">Save</button>
+                </div>
             </div>
         </div>
     </div>
