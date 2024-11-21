@@ -20,9 +20,26 @@
             fetch(endpoint)
                 .then(response => response.text())
                 .then(html => {
-                    document.getElementById('main-body').innerHTML = html;
-                });
+                    const mainBody = document.getElementById('main-body');
+                    mainBody.innerHTML = html;
+
+                    // Extract and execute scripts from the loaded HTML
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = html;
+                    const scripts = tempDiv.querySelectorAll('script');
+                    scripts.forEach(script => {
+                        const newScript = document.createElement('script');
+                        if (script.src) {
+                            newScript.src = script.src; // External script
+                        } else {
+                            newScript.textContent = script.textContent; // Inline script
+                        }
+                        document.body.appendChild(newScript);
+                    });
+                })
+                .catch(err => console.error('Error loading page:', err));
         }
+
         // Load default page
         window.onload = () => loadPage('/dashboard');
     </script>

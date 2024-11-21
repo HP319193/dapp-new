@@ -115,9 +115,6 @@ def metrics():
 
 @app.route('/users')
 def users():
-    # Mocked session for testing; replace with real login logic
-    session['is_admin'] = True  # Set to False for non-admin users
-
     return render_template('users.html', is_admin=session.get('is_admin', False))
 
 @app.route('/get_users', methods=['GET'])
