@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESG Report</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f8ff;
+            color: #34495e;
+        }
+
+        h2 {
+            text-align: center;
+            margin-top: 20px;
+            color: #0056b3;
+        }
+
+        table {
+            margin: 20px auto;
+            width: 90%;
+            border-collapse: collapse;
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            border: 1px solid #d6e4f2;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #0056b3;
+            color: #ffffff;
+        }
+
+        .header td {
+            font-weight: bold;
+            color: #0056b3;
+        }
+
+        .header select {
+            border: 1px solid #d6e4f2;
+            border-radius: 5px;
+        }
+
+        textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d6e4f2;
+            border-radius: 5px;
+        }
+
+        .save-btn {
+            display: block;
+            margin: 20px auto;
+            padding: 12px 24px;
+            font-size: 16px;
+            color: #ffffff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .save-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .table-responsive {
+            max-width: 100%;
+            overflow-x: auto;
+        }
+
+        .summary tbody tr:nth-child(even) {
+            background-color: #f7fbff;
+        }
+
+        .category-table tbody tr:hover {
+            background-color: #e9f5ff;
+        }
+
+        .summary tbody td:first-child {
+            font-weight: bold;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+            const Company_options = document.getElementById('Company_options');
+            const score = {
+                "Min": { 'Very weak': 0, 'Weak': 0.2, 'Medium': 0.4, 'Strong': 0.6, 'Very strong': 0.8 },
+                "Mid": { 'Very weak': 0.1, 'Weak': 0.3, 'Medium': 0.5, 'Strong': 0.7, 'Very strong': 0.9 },
+                "Max": { 'Very weak': 0.2, 'Weak': 0.4, 'Medium': 0.6, 'Strong': 0.8, 'Very strong': 1 },
+            };
+
+            function updateValue(event) {
+                const selectId = event.target.id;
+                const selectedValue = event.target.value;
+                const correspondingValueId = selectId.replace("_Option", "_Value");
+                const valueCell = document.getElementById(correspondingValueId);
+
+                if (valueCell) {
+                    valueCell.textContent = selectedValue;
+                } else {
+                    console.error(`Element with id "${correspondingValueId}" not found.`);
+                }
+
+                calculate();
+            }
+
+            function saveValue() {
+                const comment_list = {};
+                const conclusion_list = {};
+
+                $('.summary tbody tr td:nth-child(1)').each(function () {
+                    const key = $(this).text().trim();
+                    console.log("Key:", key);
+
+                    // Attempt to retrieve the comment value
+                    const valueComment = $('#' + key + '_comments');
+                    if (valueComment.length > 0) {
+                        const commentVal = valueComment.val();
+                        comment_list[key] = commentVal;
+                        console.log("Comment Value:", commentVal);
+                    } else {
+                        console.warn(`Element with ID '${key}_comments' not found.`);
+                    }
+
+                    // Attempt to retrieve the conclusion value
+                    const valueConclusion = $('#' + key + '_Option');
+                    if (valueConclusion.length > 0) {
+                        const conclusionVal = valueConclusion.val();
+                        conclusion_list[key] = conclusionVal;
+                        console.log("Conclusion Value:", conclusionVal);
+                    } else {
+                        console.warn(`Element with ID '${key}_Option' not found.`);
+                    }
+                });
+
+                // Check the summary input value
+                const summaryInput = $('#summary_text');
+                if (summaryInput.length > 0) {
+                    const summary = summaryInput.val();
+                    console.log("Summary:", summary);
+                } else {
+                    console.warn("Element with ID 'summary_text' not found.");
+                }
+
+                let sendValue= {
+                    "Company":Company_options.options[Company_options.selectedIndex].textContent,
+                    "Summary": summaryInput.val(),
+                    "commit_list": comment_list,
+                    "Conclusion_select": conclusion_list
+                }
+
+                console.log(sendValue)
+
+                $.ajax({
+                    url: '/dashboard_save', // Replace with your server URL
+                    method: 'POST', // Use the POST method to send data securely
+                    contentType: 'application/json', // Ensure the content type is set to JSON
+                    data: JSON.stringify(sendValue), // Convert the JavaScript object to a JSON string
+                    success: function(response) {
+                        // Handle successful response
+                        console.log("Data successfully sent to the server:", response);
+                    },
+                    error: function(xhr, status, error) {
+                        // Handle errors that occur during the request
+                        console.error("Error occurred while sending data:", status, error);
+                    }
+                });
+            }
+
+            function initialValue() {
+                $('.summary tbody tr td:nth-child(4)').each(function () {
+                    const selectId = $(this).attr('id');
+                    const correspondingValueId = selectId.replace("_Value", "_Option");
+                    const valueCell = document.getElementById(correspondingValueId);
+                    if (valueCell) {
+                        $(this).text(valueCell.value);
+                    }
+                });
+            }
+
+            function ConclusionMean(valueArray) {
+                const values = $('.summary tbody tr td:nth-child(4)').map(function() {
+                    console.log($(this).text())
+                    console.log(score.Mid[$(this).text()])
+                    return parseFloat(score.Mid[$(this).text()]);
+                }).get();
+                const average = values.length ? values.reduce((a, b) => a + b) / values.length : 0;
+
+                $('#conclusion_score').text(5*average.toFixed(2));
+
+                let conclusion_string = 'Very weak';
+                for (const [key, maxValue] of Object.entries(score.Max)) {
+                    if (average <= maxValue) {
+                        conclusion_string = key;
+                        break;
+                    }
+                }
+
+                $('#Conclusion').text(conclusion_string);
+            }
+
+            function getConclusionValues() {
+                return $('.summary tbody tr td:nth-child(4)').map(function() {
+                    return $(this).text();
+                }).get();
+            }
+
+            function getCalculatedScoreValues() {
+                return $('.summary tbody tr td:nth-child(3)').map(function() {
+                    return $(this).text();
+                }).get();
+            }
+
+            function getWeightValues() {
+                return $('.summary tbody tr td:nth-child(2)').map(function() {
+                    return $(this).text();
+                }).get();
+            }
+            function sumProduct(array1, array2) {
+                // Ensure both arrays have the same length
+                if (array1.length !== array2.length) {
+                    throw new Error('Arrays must have the same length');
+                }
+
+                // Calculate the sum product
+                let result = 0;
+                for (let i = 0; i < array1.length; i++) {
+                  result += array1[i] * array2[i];
+                }
+                return result;
+            }
+            function calculate() {
+                const ConclusionValues = getConclusionValues();
+                const CalculatedScoreValues = getCalculatedScoreValues().map(v => parseFloat(v).toFixed(2)); // Round scores
+                const WeightValues = getWeightValues().map(w => parseFloat(w).toFixed(2)); // Round weights
+
+                console.log("ConclusionValues", ConclusionValues);
+                console.log("CalculatedScoreValues", CalculatedScoreValues);
+                console.log("WeightValues", WeightValues);
+
+                ConclusionMean(ConclusionValues);
+                const calculatedScore = sumProduct(CalculatedScoreValues, WeightValues).toFixed(2); // Rounded final score
+                $('#calculated_score').text(calculatedScore);
+            }
+
+            $(document).on('change', '.category-table select', updateValue);
+
+            $(document).on('click', '.save-btn', saveValue);
+
+            function updateDashboard() {
+                $.ajax({
+                    url: '/dashboard_update',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ value: Company_options.options[Company_options.selectedIndex].textContent }),
+                    success: function(response) {
+                        let data = response['data'];
+                        let select_list = response['select_list'];
+
+                        try {
+                            data = JSON.parse(data);
+                        } catch (e) {
+                            console.error("Invalid JSON format for `data`:", e);
+                            return;
+                        }
+
+                        $('[id^="data_"]').each(function() {
+                            let key = $(this).attr('id').replace('data_', '').replace('_', ' ');
+                            $(this).text(data[key] || '');
+                        });
+
+                        if (Array.isArray(data.middle)) {
+                            updateMiddleTable(data.middle);
+                            updateCategoryTable(data.middle, select_list);
+                            initialValue();
+                            calculate();
+                        } else {
+                            console.error("Data middle is not an array or is undefined.");
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        alert("There was an error updating the dashboard. Please try again later.");
+                        console.error("AJAX error: ", status, xhr.responseText, error);
+                    }
+                });
+            }
+
+            function updateMiddleTable(middleData) {
+                const tableBody = $('.summary tbody');
+                tableBody.empty();
+                middleData.forEach((item, index) => {
+                    const tr = $('<tr></tr>');
+                    tr.append(`<td>${item['Category']}</td>`);
+                    tr.append(`<td>${item['Weight']}</td>`);
+                    // Round Calculated Score
+                    const roundedScore = parseFloat(item['Calculated score']).toFixed(2);
+                    tr.append(`<td>${roundedScore}</td>`); // Render rounded value
+                    tr.append(`<td id="${item['Category']}_Value"></td>`);
+
+                    if (index === 0) {
+                        tr.append(`<td rowspan="${middleData.length}"><textarea id="summary_text" name="comments" class="form-control h-100 w-100">${item['Comment']}</textarea></td>`);
+                        tr.append(`<td>Calculated score</td><td id="calculated_score"></td>`);
+                    } else if (index === 1) {
+                        tr.append(`<td>Conclusion</td><td id="Conclusion"></td>`);
+                    } else if (index === 2) {
+                        tr.append(`<td>Conclusion (1-5)</td><td id="conclusion_score"></td>`);
+                    } else if (index === 3) {
+                        tr.append(`<td>SustainEx score</td><td></td>`);
+                    }
+                    tableBody.append(tr);
+                });
+            }
+
+            function updateCategoryTable(middleData, select_list) {
+                const categoryTableBody = $('.category-table tbody');
+                categoryTableBody.empty();
+                middleData.forEach(item => {
+                    item.value.forEach((it, i) => {
+                        const tr = $('<tr></tr>');
+                        if (i === 0) {
+                            tr.append(`<td rowspan="${item.value.length}">${item['Category']}</td>`);
+                        }
+                        tr.append(`<td>${it['Metric']}</td>`);
+                        tr.append(`<td>${it['Description']}</td>`);
+                        tr.append(`<td>${it['Units']}</td>`);
+                        tr.append(`<td>${it['Source']}</td>`);
+
+                        // Round values
+                        const roundedCompany = parseFloat(it['Company']).toFixed(2);
+                        const roundedSector = parseFloat(it['Sector']).toFixed(2);
+                        const roundedRegion = parseFloat(it['Region']).toFixed(2);
+                        const roundedGlobal = parseFloat(it['Global']).toFixed(2);
+
+                        tr.append(`<td>${roundedCompany}</td>`); // Render rounded Company
+                        tr.append(`<td>${roundedSector}</td>`); // Render rounded Sector
+                        tr.append(`<td>${roundedRegion}</td>`); // Render rounded Region
+                        tr.append(`<td>${roundedGlobal}</td>`); // Render rounded Global
+
+                        if (i === 0) {
+                            const roundedCalculatedScore = parseFloat(item['Calculated score']).toFixed(2);
+                            tr.append(`<td rowspan="${item.value.length}">${roundedCalculatedScore}</td>`); // Rounded Calculated score
+                            tr.append(`<td rowspan="${item.value.length}"><textarea id="${item['Category']}_comments" class="form-control h-100 w-100">${item['Comment']}</textarea></td>`);
+                            tr.append(`<td rowspan="${item.value.length}"><select id="${item['Category']}_Option" class="form-select">${select_list.map(ind => `<option value="${ind}">${ind}</option>`).join('')}</select></td>`);
+                        }
+                        categoryTableBody.append(tr);
+                    });
+                });
+            }
+
+            if (Company_options) {
+                Company_options.addEventListener('change', updateDashboard);
+            } else {
+                console.error('Company_options select element not found.');
+            }
+
+            // Initial update
+            updateDashboard();
+        });
+    </script>
+
+</head>
+<body>
+
+    <h2>ESG Report</h2>
+    <div class="table-responsive">
+        <table class="header table table-striped">
+        <tr>
+            <td>Company</td>
+            <td>
+                <select id="Company_options"  class="form-select">
+                    {% for item in company_name_list %}
+                    <option value={{item}}>{{item}}</option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td>Sector</td>
+            <td>{{data['Sector']}}</td>
+            <td>Analyst</td>
+            <td>{{data['Analyst']}}</td>
+            <td>Date reviewed</td>
+            <td>{{data['Date reviewed']}}</td>
+        </tr>
+        <tr>
+            <td>ISIN</td>
+            <td>{{data["ISIN"]}}</td>
+            <td>Region</td>
+            <td>{{data['Region']}}</td>
+            <td>Team</td>
+            <td>{{data['Team']}}</td>
+        </tr>
+        <tr>
+            <td>BBG Ticker</td>
+            <td>US1264081035</td>
+        </tr>
+    </table>
+</div>
+
+    <div class="table-responsive">
+        <table class="summary table table-hover">
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Weight</th>
+                <th>Calculated Score</th>
+                <th>Conclusion</th>
+                <th>Summary</th>
+                <th colspan="2">Key outputs</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data['middle'] %}
+            <tr>
+                <td>{{item['Category']}}</td>
+                <td>{{item['Weight']}}</td>
+                <td>{{item['Calculated score']}}</td>
+                <td id={{item['Category']+"_Value"}}></td>
+                {% if loop.index0 == 0 %}
+                <td rowspan="6">
+                    <textarea id="summary_text" name="summary_text" placeholder="Enter your comments here..." required class="form-control h-100 w-100">
+                    </textarea>
+                </td>
+                {% endif %}
+                {% if loop.index0 == 0 %}
+                <td>Calculated score</td>
+                <td id="calculated_score"></td>
+                {% elif loop.index0 == 1 %}
+                <td>Conclusion</td>
+                <td id = "Conclusion"></td>
+                {% elif loop.index0 == 2 %}
+                <td>Conclusion (1-5)</td>
+                <td id ="conclusion_score"></td>
+                {% elif loop.index0 == 3 %}
+                <td>SustainEx score</td>
+                <td></td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+    <div class="table-responsive">
+        <table class="category-table table table-bordered">
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Metric</th>
+                <th>Description</th>
+                <th>Units</th>
+                <th>Source</th>
+                <th>Company</th>
+                <th>Sector</th>
+                <th>Region</th>
+                <th>Global</th>
+                <th>Calculated Score</th>
+                <th>Comment</th>
+                <th>Conclusion</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data['middle'] %}
+            {% for it in item['value'] %}
+            <tr>
+                {% if loop.index0==0 %}
+                <td rowspan={{item['value']|length}}>{{item['Category']}}</td>
+                {% endif %}
+                <td>{{it['Metric']}}</td>
+                <td>{{it['Description']}}</td>
+                <td>{{it['Units']}}</td>
+                <td>{{it['Source']}}</td>
+                <td>{{it['Company']}}</td>
+                <td>{{it['Sector']}}</td>
+                <td>{{it['Region']}}.6</td>
+                <td>{{it['Global']}}</td>
+                {% if loop.index0==0 %}
+                <td rowspan={{item['value']|length}}>{{item['Calculated score']}}</td>
+                <td rowspan={{item['value']|length}}>
+                    <textarea id="{{item['Category']}}_comments" class="form-control h-100 w-100">
+                        <!-- {{item['Comment']}} -->
+                    </textarea>
+                </td>
+                <td rowspan={{ item['value']|length }}>    
+                    <select id="{{ item['Category'] }}_Option" class="form-select">
+                        {% for ind in select_list %}
+                        <option value="{{ ind }}" {% if ind == item['Conclusion'] %} selected {% endif %}>{{ ind }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+                    {% endif %}
+                </tr>
+            {% endfor %}
+            {% endfor %}
+            <!-- Add other rows here as necessary -->
+        </tbody>
+    </table>
+</div>
+
+    <!-- Save button -->
+    <button class="save-btn">Save</button>
+
+</body>
+
+<!-- Ensure to close the body and html tags properly -->

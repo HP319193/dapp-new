@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merge Middle TD Vertically Example</title>
+    <style>
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+            padding: 8px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h2>Example of Merging Middle TD Vertically</h2>
+    <table>
+        <tr>
+            <td>Cell 1</td>
+            <td rowspan="3">Merged Cell</td> <!-- This cell spans three rows -->
+            <td>Cell 3</td>
+        </tr>
+        <tr>
+            <td>Cell 4</td>
+            <!-- Merged cell occupies this space -->
+            <td>Cell 6</td>
+        </tr>
+        <tr>
+            <td>Cell 7</td>
+            <!-- Merged cell occupies this space -->
+            <td>Cell 9</td>
+        </tr>
+    </table>
+</body>
+</html>

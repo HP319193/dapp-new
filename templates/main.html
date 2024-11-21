@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="stylesheet" href="/static/style.css">
+    <title>Main Page</title>
+</head>
+<body>
+    <div class="sidebar">
+        <button onclick="loadPage('/dashboard')">Dashboard</button>
+        <button onclick="loadPage('/metrics')">Metrics</button>
+        <button onclick="loadPage('/users')">Users</button>
+        <a href="/logout">Logout</a>
+    </div>
+    <div class="body" id="main-body">
+        <h2>Loading...</h2>
+    </div>
+
+    <script>
+        function loadPage(endpoint) {
+            fetch(endpoint)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('main-body').innerHTML = html;
+                });
+        }
+        // Load default page
+        window.onload = () => loadPage('/dashboard');
+    </script>
+</body>
+</html>

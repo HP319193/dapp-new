@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* Global Styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9fdf9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1, h2 {
+            color: #4CAF50;
+            text-align: center;
+        }
+
+        /* Container */
+        .container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Table Styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 auto;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #8FBC8F;
+            color: white;
+            font-weight: bold;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9fff9;
+        }
+
+        tr:hover {
+            background-color: #DFF2DF;
+        }
+
+        /* Form Styling */
+        .form-container {
+            width: 100%;
+            max-width: 500px;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        label {
+            font-size: 14px;
+            margin-bottom: 5px;
+            display: inline-block;
+            color: #4CAF50;
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus {
+            border-color: #4CAF50;
+            outline: none;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.5);
+        }
+
+        button {
+            background-color: #8FBC8F;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #76a776;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            table, .form-container {
+                width: 100%;
+            }
+
+            th, td {
+                font-size: 14px;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1>User Management</h1>
+    <div class="container">
+        <!-- User Table -->
+        <div>
+            <h2>User List</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Password</th>
+                        <th>Is Admin</th>
+                    </tr>
+                </thead>
+                <tbody id="user-table"></tbody>
+            </table>
+        </div>
+
+        <!-- Create Account Section -->
+        <div>
+            <h2>Create Account</h2>
+            <div class="form-container">
+                <label for="new-username">Username:</label>
+                <input type="text" id="new-username" placeholder="Enter username">
+
+                <label for="new-password">Password:</label>
+                <input type="password" id="new-password" placeholder="Enter password">
+
+                <label for="confirm-password">Confirm Password:</label>
+                <input type="password" id="confirm-password" placeholder="Confirm password">
+
+                <button id="save-button">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const isAdmin = {{ 'true' if is_admin else 'false' }};
+
+        $(document).ready(function () {
+            // Show/Hide admin features based on session
+            if (isAdmin) {
+                $("#create-account-section").removeClass("hidden");
+                $("#user-table input[type='checkbox']").prop("disabled", false);
+            } else {
+                $("#user-table input[type='checkbox']").prop("disabled", true);
+            }
+
+            // Load user data
+            function loadUsers() {
+                $.get('/get_users', function (data) {
+                    const rows = data.map(user => `
+                        <tr>
+                            <td>${user.username}</td>
+                            <td>${user.password}</td>
+                            <td><input type="checkbox" ${user.is_admin ? 'checked' : ''} disabled></td>
+                        </tr>
+                    `).join('');
+                    $("#user-table").html(rows);
+                });
+            }
+            loadUsers();
+
+            // Create new user
+            $("#save-button").click(function () {
+                const username = $("#new-username").val();
+                const password = $("#new-password").val();
+                const confirm = $("#confirm-password").val();
+
+                if (password !== confirm) {
+                    alert("Password and confirm password don't match.");
+                    return;
+                }
+
+                $.ajax({
+                    url: '/create_user',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        username,
+                        password,
+                        confirm,
+                    }),
+                    success: function (response) {
+                        if (response.success) {
+                            alert(response.message);
+                            loadUsers();
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        alert("An error occurred: " + error);
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
