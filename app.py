@@ -63,14 +63,15 @@ def login():
     user = users_collection.find_one({"username": username, "password": password})
     if user:
         session['user'] = username
-        return redirect(url_for('main'))
+        return redirect(url_for('dashboard'))
     return "Login Failed", 401
 
 @app.route('/main')
 def main():
     if 'user' not in session:
         return redirect(url_for('sign_in'))
-    return render_template('main.html')
+    # Redirect to dashboard or call the function and return its result
+    return dashboard()
 
 @app.route('/logout')
 def logout():
@@ -80,7 +81,12 @@ def logout():
 @app.route('/dashboard', methods = ['GET'])
 def dashboard():
     company_name_list=all_data['Company']
-    return render_template('dashboard.html', data=dashboard_json(all_data['Company'][0]), company_name_list=company_name_list, select_list=select_list)
+    return render_template(
+        'dashboard.html', 
+        data=dashboard_json(all_data['Company'].iloc[0]), 
+        company_name_list=company_name_list, 
+        select_list=select_list
+    )
 
 @app.route('/dashboard_update', methods=['POST'])
 def update_dashboard():
