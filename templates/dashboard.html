@@ -63,6 +63,14 @@
             transition: all 0.3s ease;
         }
     
+        .main {
+            overflow-y: auto; /* Enables vertical scrolling */
+            max-height: 90vh; /* Sets the maximum height for the scrollable area */
+            padding: 10px; /* Optional: Add padding for better aesthetics */
+            border: 1px solid #d6e4f2; /* Optional: Add a border for better visibility */
+            background-color: #ffffff; /* Optional: Ensure the background is visible */
+        }
+
         .side button:hover, .side a:hover {
             background-color: #10b981; /* Bright green hover */
             color: #1f2937; /* Contrast text on hover */
@@ -134,6 +142,44 @@
             .main {
                 margin-left: 0;
             }
+        }
+
+        .save-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px; /* Space between icon and text */
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffffff;
+            background: linear-gradient(90deg, #007bff, #0056b3);
+            border: none;
+            border-radius: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .save-btn:hover {
+            background: linear-gradient(90deg, #0056b3, #003d80);
+            transform: scale(1.05);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .save-btn:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .save-btn span {
+            font-family: 'Roboto', sans-serif;
+            display: inline-block;
+            text-transform: uppercase;
+        }
+        
+        .save-btn:hover span {
+            letter-spacing: 1px;
         }
     </style>
     
