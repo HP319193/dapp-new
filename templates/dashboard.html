@@ -7,89 +7,137 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        /* Root styling for layout */
         body {
+            margin: 0;
             font-family: 'Roboto', sans-serif;
-            background-color: #f0f8ff;
-            color: #34495e;
+            display: flex;
+            min-height: 100vh;
+            overflow: hidden;
+            background-color: #f8f9fa; /* Light gray background */
         }
-
-        h2 {
+    
+        /* Sidebar styling */
+        .side {
+            width: 270px; /* Fixed width for sidebar */
+            background-color: #1f2937; /* Elegant dark gray-blue */
+            color: #ffffff;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100%; /* Full height */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3); /* Depth effect */
+            padding: 20px 10px;
+            transition: all 0.3s ease; /* Smooth transition for interactions */
+        }
+    
+        /* Sidebar brand/logo area */
+        .side h3 {
+            font-size: 24px;
+            font-weight: bold;
+            color: #10b981; /* Modern green highlight */
             text-align: center;
-            margin-top: 20px;
-            color: #0056b3;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5); /* Glow effect */
         }
-
-        table {
-            margin: 20px auto;
-            width: 90%;
-            border-collapse: collapse;
-            background-color: #ffffff;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        th, td {
-            border: 1px solid #d6e4f2;
-            padding: 10px;
-            text-align: left;
-        }
-
-        th {
-            background-color: #0056b3 !important; /* Removed extra semicolon */
-            color: #ffffff;
-        }
-
-
-        .header td {
-            font-weight: bold;
-            color: #0056b3;
-        }
-
-        .header select {
-            border: 1px solid #d6e4f2;
-            border-radius: 5px;
-        }
-
-        textarea, select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #d6e4f2;
-            border-radius: 5px;
-        }
-
-        .save-btn {
+    
+        /* Navigation buttons and links */
+        .side button, .side a {
             display: block;
-            margin: 20px auto;
-            padding: 12px 24px;
+            margin: 10px 0;
+            padding: 15px 20px;
             font-size: 16px;
+            font-weight: 500;
             color: #ffffff;
-            background-color: #007bff;
+            background-color: transparent;
             border: none;
-            border-radius: 5px;
+            text-align: left;
+            text-decoration: none;
+            border-radius: 10px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: all 0.3s ease;
         }
-
-        .save-btn:hover {
-            background-color: #0056b3;
+    
+        .side button:hover, .side a:hover {
+            background-color: #10b981; /* Bright green hover */
+            color: #1f2937; /* Contrast text on hover */
+            box-shadow: 0 4px 8px rgba(16, 185, 129, 0.5); /* Glow on hover */
+            transform: translateX(10px); /* Subtle slide animation */
         }
-
-        .table-responsive {
-            max-width: 100%;
-            overflow-x: auto;
+    
+        /* Sidebar footer (optional logout or info) */
+        .side .footer {
+            margin-top: auto;
+            text-align: center;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6); /* Faded text for footer */
         }
-
-        .summary tbody tr:nth-child(even) {
-            background-color: #f7fbff;
+    
+        .side .footer a {
+            color: #10b981;
+            text-decoration: none;
         }
-
-        .category-table tbody tr:hover {
-            background-color: #e9f5ff;
+    
+        .side .footer a:hover {
+            text-decoration: underline;
         }
-
-        .summary tbody td:first-child {
-            font-weight: bold;
+    
+        /* Main content area */
+        .main {
+            margin-left: 270px; /* Leave space for sidebar */
+            flex: 1;
+            padding: 40px;
+            background-color: #ffffff;
+            overflow-y: auto; /* Scrollable main area */
+            transition: all 0.3s ease;
+        }
+    
+        /* Responsive design for mobile */
+        @media (max-width: 768px) {
+            .side {
+                width: 70px; /* Compact sidebar */
+                padding: 10px 5px;
+            }
+    
+            .side h3 {
+                font-size: 18px; /* Smaller logo */
+                margin-bottom: 10px;
+            }
+    
+            .side button, .side a {
+                padding: 10px;
+                text-align: center; /* Center text for narrow sidebar */
+                font-size: 14px;
+            }
+    
+            .main {
+                margin-left: 80px; /* Adjust main margin */
+            }
+        }
+    
+        @media (max-width: 576px) {
+            .side {
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-around;
+                padding: 10px;
+                box-shadow: none; /* Remove shadow for mobile */
+            }
+    
+            .main {
+                margin-left: 0;
+            }
         }
     </style>
+    
+    
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script type="text/javascript">
         $(document).ready(function () {
@@ -322,6 +370,10 @@
                 });
             }
 
+            function loadPage(page) {
+                window.location.href = page;
+            }
+
             function updateCategoryTable(middleData, select_list) {
                 const categoryTableBody = $('.category-table tbody');
                 categoryTableBody.empty();
@@ -371,144 +423,156 @@
 
 </head>
 <body>
-
-    <h2>ESG Report</h2>
-    <div class="table-responsive">
-        <table class="header table table-striped">
-        <tr>
-            <td>Company</td>
-            <td>
-                <select id="Company_options"  class="form-select">
-                    {% for item in company_name_list %}
-                    <option value={{item}}>{{item}}</option>
-                    {% endfor %}
-                </select>
-            </td>
-            <td>Sector</td>
-            <td>{{data['Sector']}}</td>
-            <td>Analyst</td>
-            <td>{{data['Analyst']}}</td>
-            <td>Date reviewed</td>
-            <td>{{data['Date reviewed']}}</td>
-        </tr>
-        <tr>
-            <td>ISIN</td>
-            <td>{{data["ISIN"]}}</td>
-            <td>Region</td>
-            <td>{{data['Region']}}</td>
-            <td>Team</td>
-            <td>{{data['Team']}}</td>
-        </tr>
-        <tr>
-            <td>BBG Ticker</td>
-            <td>US1264081035</td>
-        </tr>
-    </table>
-</div>
-
-    <div class="table-responsive">
-        <table class="summary table table-hover">
-        <thead>
-            <tr>
-                <th>Category</th>
-                <th>Weight</th>
-                <th>Calculated Score</th>
-                <th>Conclusion</th>
-                <th>Summary</th>
-                <th colspan="2">Key outputs</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in data['middle'] %}
-            <tr>
-                <td>{{item['Category']}}</td>
-                <td>{{item['Weight']}}</td>
-                <td>{{item['Calculated score']}}</td>
-                <td id={{item['Category']+"_Value"}}></td>
-                {% if loop.index0 == 0 %}
-                <td rowspan="6">
-                    <textarea id="summary_text" name="summary_text" placeholder="Enter your comments here..." required class="form-control h-100 w-100">
-                    </textarea>
-                </td>
-                {% endif %}
-                {% if loop.index0 == 0 %}
-                <td>Calculated score</td>
-                <td id="calculated_score"></td>
-                {% elif loop.index0 == 1 %}
-                <td>Conclusion</td>
-                <td id = "Conclusion"></td>
-                {% elif loop.index0 == 2 %}
-                <td>Conclusion (1-5)</td>
-                <td id ="conclusion_score"></td>
-                {% elif loop.index0 == 3 %}
-                <td>SustainEx score</td>
-                <td></td>
-                {% endif %}
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-    <div class="table-responsive">
-        <table class="category-table table table-bordered">
-        <thead>
-            <tr>
-                <th>Category</th>
-                <th>Metric</th>
-                <th>Description</th>
-                <th>Units</th>
-                <th>Source</th>
-                <th>Company</th>
-                <th>Sector</th>
-                <th>Region</th>
-                <th>Global</th>
-                <th>Calculated Score</th>
-                <th>Comment</th>
-                <th>Conclusion</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in data['middle'] %}
-            {% for it in item['value'] %}
-            <tr>
-                {% if loop.index0==0 %}
-                <td rowspan={{item['value']|length}}>{{item['Category']}}</td>
-                {% endif %}
-                <td>{{it['Metric']}}</td>
-                <td>{{it['Description']}}</td>
-                <td>{{it['Units']}}</td>
-                <td>{{it['Source']}}</td>
-                <td>{{it['Company']}}</td>
-                <td>{{it['Sector']}}</td>
-                <td>{{it['Region']}}.6</td>
-                <td>{{it['Global']}}</td>
-                {% if loop.index0==0 %}
-                <td rowspan={{item['value']|length}}>{{item['Calculated score']}}</td>
-                <td rowspan={{item['value']|length}}>
-                    <textarea id="{{item['Category']}}_comments" class="form-control h-100 w-100">
-                        <!-- {{item['Comment']}} -->
-                    </textarea>
-                </td>
-                <td rowspan={{ item['value']|length }}>    
-                    <select id="{{ item['Category'] }}_Option" class="form-select">
-                        {% for ind in select_list %}
-                        <option value="{{ ind }}" {% if ind == item['Conclusion'] %} selected {% endif %}>{{ ind }}</option>
-                        {% endfor %}
-                    </select>
-                </td>
-                    {% endif %}
+    <div class="side">
+        <h3>ESG Portal</h3> <!-- Branding or logo -->
+        <button onclick="loadPage('/dashboard')">Dashboard</button>
+        <button onclick="loadPage('/metrics')">Metrics</button>
+        <button onclick="loadPage('/users')">Users</button>
+        <a href="/logout">Logout</a>
+        <div class="footer">
+            <p>&copy; 2024 ESG Reports</p>
+            <a href="/help">Help Center</a>
+        </div>
+    </div>
+    
+    <div class='main'>
+        <h2>ESG Report</h2>
+        <div class="table-responsive">
+            <table class="header table table-striped">
+                <tr>
+                    <td>Company</td>
+                    <td>
+                        <select id="Company_options"  class="form-select">
+                            {% for item in company_name_list %}
+                            <option value={{item}}>{{item}}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>Sector</td>
+                    <td>{{data['Sector']}}</td>
+                    <td>Analyst</td>
+                    <td>{{data['Analyst']}}</td>
+                    <td>Date reviewed</td>
+                    <td>{{data['Date reviewed']}}</td>
                 </tr>
-            {% endfor %}
-            {% endfor %}
-            <!-- Add other rows here as necessary -->
-        </tbody>
-    </table>
-</div>
+                <tr>
+                    <td>ISIN</td>
+                    <td>{{data["ISIN"]}}</td>
+                    <td>Region</td>
+                    <td>{{data['Region']}}</td>
+                    <td>Team</td>
+                    <td>{{data['Team']}}</td>
+                </tr>
+                <tr>
+                    <td>BBG Ticker</td>
+                    <td>US1264081035</td>
+                </tr>
+            </table>
+        </div>
 
-    <!-- Save button -->
-    <button class="save-btn">Save</button>
+        <div class="table-responsive">
+            <table class="summary table table-hover">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Weight</th>
+                        <th>Calculated Score</th>
+                        <th>Conclusion</th>
+                        <th>Summary</th>
+                        <th colspan="2">Key outputs</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in data['middle'] %}
+                    <tr>
+                        <td>{{item['Category']}}</td>
+                        <td>{{item['Weight']}}</td>
+                        <td>{{item['Calculated score']}}</td>
+                        <td id={{item['Category']+"_Value"}}></td>
+                        {% if loop.index0 == 0 %}
+                        <td rowspan="6">
+                            <textarea id="summary_text" name="summary_text" placeholder="Enter your comments here..." required class="form-control h-100 w-100">
+                            </textarea>
+                        </td>
+                        {% endif %}
+                        {% if loop.index0 == 0 %}
+                        <td>Calculated score</td>
+                        <td id="calculated_score"></td>
+                        {% elif loop.index0 == 1 %}
+                        <td>Conclusion</td>
+                        <td id = "Conclusion"></td>
+                        {% elif loop.index0 == 2 %}
+                        <td>Conclusion (1-5)</td>
+                        <td id ="conclusion_score"></td>
+                        {% elif loop.index0 == 3 %}
+                        <td>SustainEx score</td>
+                        <td></td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
+        <div class="table-responsive">
+            <table class="category-table table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Metric</th>
+                        <th>Description</th>
+                        <th>Units</th>
+                        <th>Source</th>
+                        <th>Company</th>
+                        <th>Sector</th>
+                        <th>Region</th>
+                        <th>Global</th>
+                        <th>Calculated Score</th>
+                        <th>Comment</th>
+                        <th>Conclusion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in data['middle'] %}
+                    {% for it in item['value'] %}
+                    <tr>
+                        {% if loop.index0==0 %}
+                        <td rowspan={{item['value']|length}}>{{item['Category']}}</td>
+                        {% endif %}
+                        <td>{{it['Metric']}}</td>
+                        <td>{{it['Description']}}</td>
+                        <td>{{it['Units']}}</td>
+                        <td>{{it['Source']}}</td>
+                        <td>{{it['Company']}}</td>
+                        <td>{{it['Sector']}}</td>
+                        <td>{{it['Region']}}.6</td>
+                        <td>{{it['Global']}}</td>
+                        {% if loop.index0==0 %}
+                        <td rowspan={{item['value']|length}}>{{item['Calculated score']}}</td>
+                        <td rowspan={{item['value']|length}}>
+                            <textarea id="{{item['Category']}}_comments" class="form-control h-100 w-100">
+                                <!-- {{item['Comment']}} -->
+                            </textarea>
+                        </td>
+                        <td rowspan={{ item['value']|length }}>    
+                            <select id="{{ item['Category'] }}_Option" class="form-select">
+                                {% for ind in select_list %}
+                                <option value="{{ ind }}" {% if ind == item['Conclusion'] %} selected {% endif %}>{{ ind }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                    {% endfor %}
+                    <!-- Add other rows here as necessary -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Save button -->
+        <button class="save-btn">Save</button>
+    </div>
 </body>
 
 <!-- Ensure to close the body and html tags properly -->
