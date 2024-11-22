@@ -5,6 +5,9 @@ from pymongo import MongoClient
 import pandas as pd
 import json
 import numpy as np
+import os
+from jsonschema import validate, ValidationError
+import csv
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
@@ -17,6 +20,11 @@ data_collection=db['data']
 MetricMapping_collection=db['MetricMapping']
 MetricSelection_collection=db['MetricSelection']
 StakeholderWeights_collection=db['StakeholderWeights']
+
+# Configure upload folder
+UPLOAD_FOLDER = 'uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 all_users = pd.DataFrame(list(users_collection.find()))
 all_data = pd.DataFrame(list(data_collection.find()))
@@ -49,6 +57,78 @@ score = {
         'Very strong':1
     },
 }
+
+json_schema = {
+    "type": "object",
+    "properties": {
+        "ISIN": {"type": "string"},
+        "Company": {"type": "string"},
+        "BBG Ticker": {"type": "string"},
+        "Sector": {"type": ["string", "null"]},
+        "Industry": {"type": ["string", "null"]},
+        "Country": {"type": ["string", "null"]},
+        "Region": {"type": ["string", "null"]},
+        "MarketCap": {"type": ["number", "null"]},
+        "SustainEx": {"type": ["string", "null"]},
+        "NZAF": {"type": ["string", "null"]},
+        "MSCI": {"type": ["string", "null"]},
+        "ENERGY_CONSUMP_INTEN_USD": {"type": ["number", "null"]},
+        "WATER_WD_INTEN_RECENT": {"type": ["number", "null"]},
+        "CARBON_EMISSIONS_SCOPE_12_INTEN": {"type": ["number", "null"]},
+        "HAS_COMMITTED_TO_SBTI_TARGET": {"type": ["boolean", "null"]},
+        "HAS_SBTI_APPROVED_TARGET": {"type": ["boolean", "null"]},
+        "SUST_BIODIV_PROTECT_POL_VALUE": {"type": ["boolean", "null"]},
+        "TARGET_SUMMARY_CUM_CHANGE_2030": {"type": ["number", "null"]},
+        "SBTI_NET_ZERO_TARGET_STATUS": {"type": ["boolean", "null"]},
+        "Average Employee Length of service": {"type": ["number", "null"]},
+        "Microfinance Impact Investment": {"type": ["number", "null"]},
+        "Supplier ESG training": {"type": ["boolean", "null"]}
+    },
+    "additionalProperties": False
+}
+
+document_schema = {
+    "type": "object",
+    "properties": {
+        "ISIN": {"type": "string"},
+        "Company": {"type": "string"},
+        "BBG Ticker": {"type": "string"},
+        "Sector": {"type": "string"},
+        "Industry": {"type": "string"},
+        "Country": {"type": "string"},
+        "Region": {"type": "string"},
+        "MarketCap": {"type": ["number", "null"]},
+        "SustainEx": {"type": ["string", "null"]},
+        "NZAF": {"type": ["string", "null"]},
+        "MSCI": {"type": ["string", "null"]},
+        "ENERGY_CONSUMP_INTEN_USD": {"type": ["number", "null"]},
+        "WATER_WD_INTEN_RECENT": {"type": ["number", "null"]},  # Allowing null
+        "CARBON_EMISSIONS_SCOPE_12_INTEN": {"type": ["number","null"]},
+        "HAS_COMMITTED_TO_SBTI_TARGET": {"type": ["boolean","null"]},
+        "HAS_SBTI_APPROVED_TARGET": {"type": ["boolean","null"]},
+        "SUST_BIODIV_PROTECT_POL_VALUE": {"type": ["boolean","null"]},
+        "TARGET_SUMMARY_CUM_CHANGE_2030": {"type": ["number", "null"]},
+        "SBTI_NET_ZERO_TARGET_STATUS": {"type": ["boolean","null"]},  
+        "Average Employee Length of service": {"type": ["number", "null"]},
+        "Microfinance Impact Investment": {"type": ["number", "null"]},
+        "Supplier ESG training": {"type": ["boolean","null"]},
+        "Summary": {"type": ["string", "null"]},
+        "Conclusion_select": {"type": "array","items": {"type": "string"}},
+        "commit_list": {"type": "array","items": {"type": "string"}},
+    },
+    "required": [
+        "ISIN", "Company", "BBG Ticker", "Sector", "Industry",
+        "Country", "Region", "MarketCap", "SustainEx", "NZAF", "MSCI",
+        "ENERGY_CONSUMP_INTEN_USD", "WATER_WD_INTEN_RECENT",
+        "CARBON_EMISSIONS_SCOPE_12_INTEN", "HAS_COMMITTED_TO_SBTI_TARGET",
+        "HAS_SBTI_APPROVED_TARGET", "SUST_BIODIV_PROTECT_POL_VALUE",
+        "TARGET_SUMMARY_CUM_CHANGE_2030", "SBTI_NET_ZERO_TARGET_STATUS",
+        "Average Employee Length of service", "Microfinance Impact Investment",
+        "Supplier ESG training", "Summary", "Conclusion_select", "commit_list"
+    ],
+    "additionalProperties": False
+}
+
 # Routes
 @app.route('/')
 def sign_in():
@@ -91,7 +171,7 @@ def dashboard():
 @app.route('/dashboard_update', methods=['POST'])
 def update_dashboard():
     data = request.get_json()
-    print('data', data)
+    # print('data', data)
     dashboard_data = json.dumps(dashboard_json(data['value']),indent=4)
 
     return jsonify(data=dashboard_data, select_list=select_list)
@@ -99,7 +179,7 @@ def update_dashboard():
 @app.route('/dashboard_save', methods=['POST'])
 def save_dashboard():
     data = request.get_json()
-    print("data", data)
+    # print("data", data)
     filter_query = {'Company': data['Company']}
     update_data = {
         '$set': {
@@ -113,11 +193,116 @@ def save_dashboard():
         print(f"Successfully updated the document for Company: {data['Company']}")
     else:
         print(f"No document found for Company: {data['Company']}")
-    return "OK"
+    return jsonify({"message":"File save Success"})
 
-@app.route('/metrics')
+@app.route('/metrics', methods=['GET'])
 def metrics():
-    return render_template('metrics.html')
+    # Convert stakeholder weights to dictionary and remove _id
+    stakeholder_weights_data = all_StakeholderWeights.to_dict(orient='records')
+    for item in stakeholder_weights_data:
+        item.pop('_id', None)
+
+    print(stakeholder_weights_data)
+    
+    # Select necessary columns from MetricSelection
+    metric_selection_cleaned = all_MetricSelection.loc[:, ['Stakeholder', 'MetricCode']]
+    
+    # Merge with MetricMapping
+    integrated_table = pd.merge(all_MetricMapping, metric_selection_cleaned, on='MetricCode', how='inner')
+    integrated_table_data = integrated_table.to_dict(orient='records')
+    
+    # Remove _id from merged data
+    for item in integrated_table_data:
+        item.pop('_id', None)
+        
+    print(integrated_table_data)
+    
+    return render_template('metrics.html', stakeholder_weights=stakeholder_weights_data, integrated_table=integrated_table_data)
+
+
+@app.route('/save-metrics', methods=['POST'])
+def save_metrics():
+    data = request.get_json()
+    first_json_keys = ["MetricName", "MetricCode", "MetricDescription", "Units", "Source", "Type", "Scoring", "Format"]
+    second_json_keys = ["MetricCode", "Stakeholder"]
+
+    # Split data
+    try:
+        MetricMapping_json = [{key: item[key] for key in first_json_keys if key in item} for item in data]
+        MetricSelection_json = [{key: item[key] for key in second_json_keys if key in item} for item in data]
+
+        for item in MetricMapping_json:
+            MetricMapping_collection.update_one(
+                {"MetricCode": item["MetricCode"]},  # Filter by unique key
+                {"$set": item},                      # Update the data
+                upsert=True                          # Insert if not found
+            )
+
+        for item in MetricSelection_json:
+            MetricSelection_collection.update_one(
+                {"MetricCode": item["MetricCode"]},  # Filter by unique key
+                {"$set": item},                      # Update the data
+                upsert=True                          # Insert if not found
+            )
+        print("Metric upload OK")
+        return jsonify({'message': 'OK'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/save-weight', methods=['POST'])
+def save_weight():
+    data = request.get_json()
+    try:
+        for item in data:
+            MetricSelection_collection.update_one(
+                {"Stakeholder": item["Stakeholder"]},  # Filter by unique key
+                {"$set": item},                      # Update the data
+                upsert=True                          # Insert if not found
+            )
+        print("Weight upload OK")
+        return jsonify({'message': 'OK'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+    file.save(file_path)
+
+    try:
+        # Handle JSON files
+        if file.filename.endswith('.json'):
+            with open(file_path, 'r') as f:
+                documents = json.load(f)
+
+        # Handle CSV or Excel files
+        elif file.filename.endswith('.csv') or file.filename.endswith(('.xls', '.xlsx')):
+            json_path = csv_to_json(file_path)  # Convert CSV/Excel to JSON
+            with open(json_path, 'r') as f:
+                documents = json.load(f)
+
+        else:
+            return jsonify({'error': 'Invalid file type. Only JSON, CSV, or Excel files are supported.'}), 400
+
+        # Pass the documents directly to the function
+        errors = update_or_insert(documents)
+
+        if len(errors) > 0:
+            return jsonify({'message': 'File processed with errors', 'errors': len(errors)}), 200
+        else:
+            return jsonify({'message': 'File processed successfully'}), 200
+
+    except json.JSONDecodeError:
+        return jsonify({'error': 'Invalid JSON format'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/users')
 def users():
@@ -252,7 +437,7 @@ def dashboard_json(company_name):
             conclusion = company_entry['Conclusion_select'][stakeholder]
         else:
             conclusion = select_list[0]
-        print(conclusion)
+        # print(conclusion)
         stakeholder_info.update({
             'Calculated score': calculated_average,
             'Comment': comment,
@@ -260,9 +445,126 @@ def dashboard_json(company_name):
         })
 
         json_structure['middle'].append(stakeholder_info)
-    print(json_structure)
+    # print(json_structure)
     return json_structure
 
+
+def update_or_insert(documents):
+    collection = db['data']
+    print("start upload")
+    # Ensure all required fields exist with default values if needed
+    required_defaults = {
+        "ISIN": "",
+        "Company": "",
+        "BBG Ticker": "",
+        "Sector": "",
+        "Industry": "",
+        "Country": "",
+        "Region": "",
+        "MarketCap": 0,
+        "SustainEx": "",
+        "NZAF": "",
+        "MSCI": "",
+        "ENERGY_CONSUMP_INTEN_USD": 0.0,
+        "WATER_WD_INTEN_RECENT": 0,
+        "CARBON_EMISSIONS_SCOPE_12_INTEN": 0,
+        "HAS_COMMITTED_TO_SBTI_TARGET": False,
+        "HAS_SBTI_APPROVED_TARGET": False,
+        "SUST_BIODIV_PROTECT_POL_VALUE": False,
+        "TARGET_SUMMARY_CUM_CHANGE_2030": 0.0,
+        "SBTI_NET_ZERO_TARGET_STATUS": False,
+        "Average Employee Length of service": 0.0,
+        "Microfinance Impact Investment": 0.0,
+        "Supplier ESG training": False,
+        "Summary": '',
+        "Conclusion_select": [],
+        "commit_list": []
+    }
+    i = 0
+    error_list=[]
+    for entry in documents:
+        try:
+            # Fill in missing fields with their default values
+            for field, default in required_defaults.items():
+                if field not in entry:
+                    entry[field] = default
+            
+            # Validate each document against the schema
+            validate(instance=entry, schema=document_schema)
+            
+            # Use 'ISIN' as a unique identifier for upserting into the database
+            unique_field = entry.get("ISIN")
+            if unique_field:
+                query = {'ISIN': unique_field}
+                collection.update_one(query, {'$set': entry}, upsert=True)
+            else:
+                print("Document does not have an ISIN field:", entry)
+
+        except ValidationError as e:
+            error_list.append(f"Validation error in document {entry.get('ISIN', 'unknown')}: {e.message}")
+            print(f"Validation error in document {entry.get('ISIN', 'unknown')}: {e.message}")
+            i += 1
+    if i == 0:
+        print("Success upload")
+    else:
+        print("Failure upload", i)
+    return error_list
+
+def convert_and_validate_types(item):
+    """ Convert string representations in item to appropriate types. """
+    conversions = {
+        "MarketCap": float,
+        "ENERGY_CONSUMP_INTEN_USD": float,
+        "WATER_WD_INTEN_RECENT": float,
+        "CARBON_EMISSIONS_SCOPE_12_INTEN": float,
+        "HAS_COMMITTED_TO_SBTI_TARGET": lambda x: bool(float(x)),
+        "HAS_SBTI_APPROVED_TARGET": lambda x: bool(float(x)),
+        "SUST_BIODIV_PROTECT_POL_VALUE": lambda x: bool(float(x)),
+        "TARGET_SUMMARY_CUM_CHANGE_2030": float,
+        "SBTI_NET_ZERO_TARGET_STATUS": lambda x: bool(float(x)),
+        "Average Employee Length of service": float,
+        "Microfinance Impact Investment": lambda x: float(x) if x else None,
+        "Supplier ESG training": lambda x: bool(float(x))
+    }
+    
+    for key, convert in conversions.items():
+        try:
+            value = item[key].strip('"')  # Strip quotes from the string
+            if value == 'NA':
+                item[key] = None
+            elif value != '':
+                item[key] = convert(value)
+            else:
+                item[key] = None
+        except (ValueError, TypeError) as e:
+            print(f"Type conversion error for {key} ({item[key]}): {e}")
+
+    return item
+
+def csv_to_json(csv_file_path):
+    """ Converts a CSV file to a JSON file and validates it against a JSON schema. """
+    json_file_path = os.path.join(app.config['UPLOAD_FOLDER'], "output.json")
+    # Read CSV data
+    with open(csv_file_path, mode='r', encoding='utf-8') as csv_file:
+        csv_reader = csv.DictReader(csv_file)
+        data = [convert_and_validate_types(row) for row in csv_reader]
+
+    # Validate each item against the JSON schema
+    validated_data = []
+    for item in data:
+        try:
+            validate(instance=item, schema=json_schema)
+            validated_data.append(item)
+        except ValidationError as e:
+            print(f"Validation error for item {item}: {e.message}")
+            continue
+    
+    # Write validated data to JSON
+    with open(json_file_path, mode='w', encoding='utf-8') as json_file:
+        json.dump(validated_data, json_file, indent=4)
+
+    print(f"Successfully converted and validated {csv_file_path} to {json_file_path}")
+    return json_file_path
 
 
 if __name__ == '__main__':
