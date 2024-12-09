@@ -211,4 +211,34 @@ body {
     min-width: 150px;
 }
 
+.combo-box {
+    position: relative;
+}
+.combo-box input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+.dropdown-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: white;
+    z-index: 1000;
+    display: none;
+}
+.dropdown-list div {
+    padding: 10px;
+    cursor: pointer;
+}
+.dropdown-list div:hover {
+    background-color: #f0f0f0;
+}
 

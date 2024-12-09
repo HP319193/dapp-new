@@ -33,6 +33,8 @@
                     <thead>
                         <tr>
                             <th>Username</th>
+                            <th>Analyst</th>
+                            <th>Team</th>
                             <th>Password</th>
                             <th>Is Admin</th>
                         </tr>
@@ -45,6 +47,16 @@
             <h2>Create Account</h2>
                 <label for="new-username">Username:</label>
                 <input type="text" id="new-username" placeholder="Enter username">
+
+                <label for="new-analyst">Analyst:</label>
+                <input type="text" id="new-analyst" placeholder="Enter analyst">
+
+                <label for="new-team">Team:</label>
+                <div class="combo-box">
+                    <input type="text" id="new-team" placeholder="Enter team">
+                    <div class="dropdown-list" id="dropdown">
+                    </div>
+                </div>
 
                 <label for="new-password">Password:</label>
                 <input type="password" id="new-password" placeholder="Enter password">
@@ -70,23 +82,49 @@
 
             // Load user data
             function loadUsers() {
-                $.get('/get_users', function (data) {
-                    console.log(data)
-                    const rows = data.map(user => `
-                        <tr>
-                            <td>${user.username}</td>
-                            <td>${user.password}</td>
-                            <td><input type="checkbox" ${user.is_admin ? 'checked' : ''} disabled></td>
-                        </tr>
-                    `).join('');
-                    $("#user-table").html(rows);
+                $.ajax({
+                    url: '/get_users',
+                    type: 'GET',
+                    success: function(data) {
+                        console.log("get_users");
+                        console.log(data);
+                        console.log(data['users']);
+
+                        const user_rows = data['users'].map(user => `
+                            <tr>
+                                <td>${user.username || ''}</td>
+                                <td>${user.analyst || ''}</td>
+                                <td>${user.team || ''}</td>
+                                <td>${user.password || ''}</td>
+                                <td><input type="checkbox" ${user.is_admin ? 'checked' : ''} disabled></td>
+                            </tr>
+                        `).join('');
+                        $("#user-table").html(user_rows);
+
+                        const team_rows = Array.isArray(data['teams_list']) ? data['teams_list'].map(team => `
+                            <div onclick="selectItem(this)">${team}</div>
+                        `).join('') : '';
+
+                        $("#dropdown").html(team_rows);
+
+                        console.log("OK");
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.error('Error fetching users:', textStatus, errorThrown);
+                    }
                 });
+
             }
+
+            console.log("reload")
+
             loadUsers();
 
             // Create new user
             $("#save-button").click(function () {
                 const username = $("#new-username").val();
+                const analyst = $("#new-analyst").val();
+                const team = $("#new-team").val();
                 const password = $("#new-password").val();
                 const confirm = $("#confirm-password").val();
 
@@ -101,6 +139,8 @@
                     contentType: 'application/json',
                     data: JSON.stringify({
                         username,
+                        analyst,
+                        team,
                         password,
                         confirm,
                     }),
@@ -116,6 +156,41 @@
                         alert("An error occurred: " + error);
                     }
                 });
+            });
+
+            const $dropdown = $('#dropdown');
+            const $new_team = $('#new-team');
+
+            // Function to select item from dropdown
+            window.selectItem = function(item) {
+                $new_team.val($(item).text());
+                $dropdown.hide();
+            };
+            // Show dropdown when input is focused
+            $new_team.on('focus', function() {
+                $dropdown.show();
+            });
+
+            // Filter dropdown list based on input
+            $new_team.on('input', function() {
+                const filter = $new_team.val().toLowerCase();
+                $dropdown.children('div').each(function() {
+                    const text = $(this).text().toLowerCase();
+                    $(this).toggle(text.includes(filter));
+                });
+            });
+
+            // Set input value and hide dropdown when an item is clicked
+            $dropdown.on('click', 'div', function() {
+                $new_team.val($(this).text());
+                $dropdown.hide();
+            });
+
+            // Hide dropdown when clicking outside
+            $(document).on('click', function(event) {
+                if (!$(event.target).closest('.combo-box').length) {
+                    $dropdown.hide();
+                }
             });
         });
     </script>

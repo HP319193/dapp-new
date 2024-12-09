@@ -311,15 +311,41 @@ def users():
 
 @app.route('/get_users', methods=['GET'])
 def get_users():
-    users = list(users_collection.find({}, {'_id': 0, 'username': 1, 'password': 1, 'is_admin': 1}))
-    for user in users:
-        user['password'] = "*****"  # Hide actual password
-    return jsonify(users)
+    # Check for available columns
+    expected_columns = ['username', 'analyst', 'team', 'password', 'is_admin']
+    available_columns = [col for col in expected_columns if col in all_users.columns]
+
+    # Filter the DataFrame based on existing columns
+    users = all_users[available_columns].copy()
+
+    # Hide passwords if the column exists
+    if 'password' in users.columns:
+        users['password'] = "*****"
+
+    # Replace NaN values with None
+    users = users.where(pd.notnull(users), None)
+
+    # Convert to dictionary format
+    users_dict = users.to_dict(orient='records')
+
+    # Generate a list of unique teams only if 'team' column exists
+    if 'team' in all_users.columns:
+        teams_list = all_users['team'].drop_duplicates().dropna().tolist()
+    else:
+        teams_list = []
+
+    print(users_dict)
+    print(teams_list)
+
+    return jsonify({"users": users_dict, "teams_list": teams_list})
+
 
 @app.route('/create_user', methods=['POST'])
 def create_user():
     data = request.json
     username = data.get('username')
+    analyst = data.get('analyst')
+    team = data.get('team')
     password = data.get('password')
     confirm = data.get('confirm')
 
@@ -331,8 +357,16 @@ def create_user():
     
     if users_collection.find_one({'username': username}):
         return jsonify({'success': False, 'message': "Username already exists. Use another username."})
+    
+    if analyst is None:
+        return jsonify({'success': False, 'message': "Input Analyst."})
+    
+    if team is None:
+        return jsonify({'success': False, 'message': "Input Team"})
 
-    users_collection.insert_one({'username': username, 'password': password, 'is_admin': False})
+    users_collection.insert_one({'username': username, 'password': password, 'analyst': analyst, 'team': team, 'is_admin': False})
+    global all_users
+    all_users = pd.DataFrame(list(users_collection.find()))
     return jsonify({'success': True, 'message': "User created successfully."})
 
 def dashboard_json(company_name):

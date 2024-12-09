@@ -267,7 +267,7 @@
                     tr.append(`<td id="${item['Category']}_Value"></td>`);
 
                     if (index === 0) {
-                        tr.append(`<td rowspan="${middleData.length}"><textarea id="summary_text" name="comments" class="form-control h-100 w-100">${item['Comment']}</textarea></td>`);
+                        tr.append(`<td rowspan="${middleData.length}"><textarea id="summary_text" name="comments" rows = "12" class="form-control h-100 w-100">${item['Comment']}</textarea></td>`);
                         tr.append(`<td>Calculated score</td><td id="calculated_score"></td>`);
                     } else if (index === 1) {
                         tr.append(`<td>Conclusion</td><td id="Conclusion"></td>`);
@@ -312,7 +312,7 @@
                         if (i === 0) {
                             const roundedCalculatedScore = parseFloat(item['Calculated score']).toFixed(2);
                             tr.append(`<td rowspan="${item.value.length}">${roundedCalculatedScore}</td>`); // Rounded Calculated score
-                            tr.append(`<td rowspan="${item.value.length}"><textarea id="${item['Category']}_comments" class="form-control h-100 w-100">${item['Comment']}</textarea></td>`);
+                            tr.append(`<td rowspan="${item.value.length}"><textarea id="${item['Category']}_comments" rows = "${2 * item.value.length}" class="form-control h-100 w-100">${item['Comment']}</textarea></td>`);
                             tr.append(`<td rowspan="${item.value.length}"><select id="${item['Category']}_Option" class="form-select">${select_list.map(ind => `<option value="${ind}">${ind}</option>`).join('')}</select></td>`);
                         }
                         categoryTableBody.append(tr);
@@ -330,7 +330,6 @@
             updateDashboard();
         });
     </script>
-
 </head>
 <body>
     <div class="sidebar">
@@ -406,7 +405,7 @@
                         <td id={{item['Category']+"_Value"}}></td>
                         {% if loop.index0 == 0 %}
                         <td rowspan="6">
-                            <textarea id="summary_text" name="summary_text" placeholder="Enter your comments here..." required class="form-control h-100 w-100">
+                            <textarea id="summary_text" name="summary_text" rows = "12" placeholder="Enter your comments here..." required class="form-control h-100 w-100">
                             </textarea>
                         </td>
                         {% endif %}
@@ -464,7 +463,7 @@
                         {% if loop.index0==0 %}
                         <td rowspan={{item['value']|length}}>{{item['Calculated score']}}</td>
                         <td rowspan={{item['value']|length}}>
-                            <textarea id="{{item['Category']}}_comments" class="form-control h-100 w-100">
+                            <textarea id="{{item['Category']}}_comments" rows="{{2*item['value']|length}}"="form-control h-100 w-100">
                                 <!-- {{item['Comment']}} -->
                             </textarea>
                         </td>
