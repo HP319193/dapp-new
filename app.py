@@ -8,15 +8,21 @@ import numpy as np
 import os
 from jsonschema import validate, ValidationError
 import csv
-
+from datetime import datetime
+import pytz
 
 
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
+uri = "mongodb+srv://daniellin31223:HwGMxusif3xabROS@dapp.hd2pj.mongodb.net/?retryWrites=true&w=majority&appName=dapp"
 
 # Database setup
-client = MongoClient("mongodb+srv://daniellin31223:HwGMxusif3xabROS@dapp.hd2pj.mongodb.net/?retryWrites=true&w=majority&appName=dapp")
+client = MongoClient(
+    uri,
+    tls=True,  # Ensure TLS/SSL is enabled
+    serverSelectionTimeoutMS=5000  # Increase timeout if needed
+)
 db = client['dapp']
 users_collection = db['users']
 data_collection=db['data']
@@ -67,6 +73,9 @@ json_schema = {
         "ISIN": {"type": "string"},
         "Company": {"type": "string"},
         "BBG Ticker": {"type": "string"},
+        "Analyst": {"type": "string"},
+        "Team": {"type": "string"},
+        "Date reviewed": {"type": "string", "format": "date-time"},  # Use date-time format for ISO 8601
         "Sector": {"type": ["string", "null"]},
         "Industry": {"type": ["string", "null"]},
         "Country": {"type": ["string", "null"]},
@@ -96,6 +105,9 @@ document_schema = {
         "ISIN": {"type": "string"},
         "Company": {"type": "string"},
         "BBG Ticker": {"type": "string"},
+        "Analyst": {"type": "string"},
+        "Team": {"type": "string"},
+        "Date reviewed": {"type": "string", "format": "date-time"},  # Use date-time format for ISO 8601
         "Sector": {"type": "string"},
         "Industry": {"type": "string"},
         "Country": {"type": "string"},
@@ -120,7 +132,7 @@ document_schema = {
         "commit_list": {"type": "array","items": {"type": "string"}},
     },
     "required": [
-        "ISIN", "Company", "BBG Ticker", "Sector", "Industry",
+        "ISIN", "Company", "BBG Ticker", "Analyst", "Team", "Date reviewed", "Sector", "Industry",
         "Country", "Region", "MarketCap", "SustainEx", "NZAF", "MSCI",
         "ENERGY_CONSUMP_INTEN_USD", "WATER_WD_INTEN_RECENT",
         "CARBON_EMISSIONS_SCOPE_12_INTEN", "HAS_COMMITTED_TO_SBTI_TARGET",
@@ -174,10 +186,23 @@ def dashboard():
 @app.route('/dashboard_update', methods=['POST'])
 def update_dashboard():
     data = request.get_json()
-    # print('data', data)
-    dashboard_data = json.dumps(dashboard_json(data['value']),indent=4)
+    print('data', data['value'])
+    send_json=dashboard_json(data['value'])
+    print("Send JSON\n", send_json)
+    dashboard_data = json.dumps(send_json, indent=4)
+    dashboard_data = dashboard_data.replace('NaN', 'null')
+    def replace_none_with_empty_string(value):
+        if isinstance(value, dict):
+            return {k: replace_none_with_empty_string(v) for k, v in value.items()}
+        elif isinstance(value, list):
+            return [replace_none_with_empty_string(item) for item in value]
+        else:
+            return value
 
-    return jsonify(data=dashboard_data, select_list=select_list)
+    # Clean the data
+    cleaned_data = replace_none_with_empty_string(dashboard_data)
+    print("dashboard_data", cleaned_data)
+    return jsonify(data=cleaned_data, select_list=select_list)
 
 @app.route('/dashboard_save', methods=['POST'])
 def save_dashboard():
@@ -188,7 +213,10 @@ def save_dashboard():
         '$set': {
             'Summary': data['Summary'],
             'commit_list': data['commit_list'],
-            'Conclusion_select': data['Conclusion_select']
+            'Conclusion_select': data['Conclusion_select'],
+            'Analyst': data['Analyst'],
+            'Team': data['Team'],
+            'Date reviewed': data['Date reviewed'],
         }
     }
     result = data_collection.update_one(filter_query, update_data)
@@ -374,14 +402,32 @@ def create_user():
 def dashboard_json(company_name):
     company_entry = all_data[all_data['Company'] == company_name].iloc[0]  # Select first row as an example
 
+    if 'Analyst' not in company_entry:
+        print(f"Missing 'Analyst' column for company: {company_name}")
+        analyst_value = 'Not Available'
+    else:
+        analyst_value = company_entry['Analyst']
+
+    if 'Team' not in company_entry:
+        print(f"Missing 'Team' column for company: {company_name}")
+        team_value = 'Not Available'
+    else:
+        team_value = company_entry['Team']
+
+    if 'Date reviewed' not in company_entry:
+        print(f"Missing 'Date reviewed' column for company: {company_name}")
+        date_reviewed_value = 'Not Available'
+    else:
+        date_reviewed_value = iso2formatted_time(company_entry['Date reviewed'])
+        print("Date reviewed", date_reviewed_value)
     json_structure = {
         'Company': company_entry['Company'],
         'Sector': company_entry['Sector'],
-        'Analyst': "Analyst",
-        'Date reviewed': "Data reviewed",
+        'Analyst': analyst_value,
+        'Date reviewed': date_reviewed_value,
         'ISIN': company_entry['ISIN'],
         'Region': company_entry['Region'],
-        'Team': "Team",
+        'Team': team_value,
         'BBG Ticker': company_entry['BBG Ticker'],
         'Summary': company_entry['Summary'],
         'middle': []
@@ -494,6 +540,9 @@ def update_or_insert(documents):
         "ISIN": "",
         "Company": "",
         "BBG Ticker": "",
+        "Analyst": "",
+        "Team": "",
+        "Date reviewed": "2001.01.01 00:00:00 UTC",  # Use date-time format for ISO 8601
         "Sector": "",
         "Industry": "",
         "Country": "",
@@ -603,6 +652,32 @@ def csv_to_json(csv_file_path):
     print(f"Successfully converted and validated {csv_file_path} to {json_file_path}")
     return json_file_path
 
+def iso2formatted_time(iso_timestamp):
+    if pd.isna(iso_timestamp):
+        # Handle NaN case here, perhaps returning None or some default date/time
+        return 'Invalid Timestamp'  # Or use another default value
+
+    # Ensure iso_timestamp is treated as a string.
+    if not isinstance(iso_timestamp, str):
+        iso_timestamp = str(iso_timestamp)
+        
+    try:
+        # Parse the ISO timestamp into a datetime object
+        utc_time = datetime.strptime(iso_timestamp, '%Y-%m-%dT%H:%M:%S.%fZ')
+        # Additional formatting or conversion logic if needed
+        return utc_time.strftime('%Y-%m-%d %H:%M:%S')
+    except ValueError as e:
+        # Handle the case where strptime fails due to incorrect format
+        print(f"Error parsing date: {e}")
+        return 'Invalid Timestamp'
+
+def formatted2iso_time(date_str):
+    dt = datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S.%fZ')
+    
+    # Convert it to ISO 8601 format
+    iso_format = dt.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+    
+    return iso_format
 
 if __name__ == '__main__':
     app.run()

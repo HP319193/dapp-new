@@ -106,11 +106,16 @@
                     console.warn("Element with ID 'summary_text' not found.");
                 }
 
+                const now = new Date();
+
                 let sendValue= {
                     "Company":Company_options.options[Company_options.selectedIndex].textContent,
                     "Summary": summaryInput.val(),
                     "commit_list": comment_list,
-                    "Conclusion_select": conclusion_list
+                    "Conclusion_select": conclusion_list,
+                    "Analyst":"Analyst",
+                    "Team":"Team",
+                    "Date reviewed":now.toISOString(),
                 }
 
                 console.log(sendValue)
@@ -217,15 +222,23 @@
             //$(document).on('click', '.upload-btn', uploadValue);
 
             function updateDashboard() {
+                function isJson(data) {
+                    try {
+                        JSON.parse(data);
+                        return true;  // It is JSON
+                    } catch (e) {
+                        return false; // It is not JSON
+                    }
+                }
                 $.ajax({
                     url: '/dashboard_update',
                     method: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({ value: Company_options.options[Company_options.selectedIndex].textContent }),
                     success: function(response) {
+
                         let data = response['data'];
                         let select_list = response['select_list'];
-
                         try {
                             data = JSON.parse(data);
                         } catch (e) {
@@ -233,13 +246,16 @@
                             return;
                         }
 
+                        console.log(data)
+                        console.log(select_list)
+
                         $('[id^="data_"]').each(function() {
                             let key = $(this).attr('id').replace('data_', '').replace('_', ' ');
                             $(this).text(data[key] || '');
                         });
 
                         if (Array.isArray(data.middle)) {
-                            updateMiddleTable(data.middle);
+                            updateMiddleTable(data.middle, data['Summary']);
                             updateCategoryTable(data.middle, select_list);
                             initialValue();
                             calculate();
@@ -254,8 +270,9 @@
                 });
             }
 
-            function updateMiddleTable(middleData) {
+            function updateMiddleTable(middleData, summary) {
                 const tableBody = $('.summary tbody');
+                console.log("middleData", middleData)
                 tableBody.empty();
                 middleData.forEach((item, index) => {
                     const tr = $('<tr></tr>');
@@ -267,7 +284,7 @@
                     tr.append(`<td id="${item['Category']}_Value"></td>`);
 
                     if (index === 0) {
-                        tr.append(`<td rowspan="${middleData.length}"><textarea id="summary_text" name="comments" rows = "12" class="form-control h-100 w-100">${item['Comment']}</textarea></td>`);
+                        tr.append(`<td rowspan="${middleData.length}"><textarea id="summary_text" name="comments" rows = "12" class="form-control h-100 w-100">${summary}</textarea></td>`);
                         tr.append(`<td>Calculated score</td><td id="calculated_score"></td>`);
                     } else if (index === 1) {
                         tr.append(`<td>Conclusion</td><td id="Conclusion"></td>`);
