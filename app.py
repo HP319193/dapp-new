@@ -8,13 +8,15 @@ import numpy as np
 import os
 from jsonschema import validate, ValidationError
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 
 
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
+# Configure session lifetime
+app.permanent_session_lifetime = timedelta(minutes=15)  # Set session timeout to 15 minutes
 uri = "mongodb+srv://daniellin31223:HwGMxusif3xabROS@dapp.hd2pj.mongodb.net/?retryWrites=true&w=majority&appName=dapp"
 
 # Database setup
@@ -156,8 +158,11 @@ def login():
     username = request.form['username']
     password = request.form['password']
     user = users_collection.find_one({"username": username, "password": password})
+    session.permanent = True
+    print(user)
     if user:
         session['user'] = username
+        session['is_admin'] = user['is_admin']
         return redirect(url_for('dashboard'))
     return "Login Failed", 401
 
@@ -175,20 +180,23 @@ def logout():
 
 @app.route('/dashboard', methods = ['GET'])
 def dashboard():
-    company_name_list=all_data['Company']
-    return render_template(
-        'dashboard.html', 
-        data=dashboard_json(all_data['Company'].iloc[0]), 
-        company_name_list=company_name_list, 
-        select_list=select_list
-    )
+    if 'user' in session:
+        print(session)
+        company_name_list=all_data['Company']
+        return render_template(
+            'dashboard.html', 
+            data=dashboard_json(all_data['Company'].iloc[0]), 
+            company_name_list=company_name_list, 
+            select_list=select_list
+        )
+    return redirect(url_for('sign_in'))
 
 @app.route('/dashboard_update', methods=['POST'])
 def update_dashboard():
     data = request.get_json()
-    print('data', data['value'])
+    # print('data', data['value'])
     send_json=dashboard_json(data['value'])
-    print("Send JSON\n", send_json)
+    # print("Send JSON\n", send_json)
     dashboard_data = json.dumps(send_json, indent=4)
     dashboard_data = dashboard_data.replace('NaN', 'null')
     def replace_none_with_empty_string(value):
@@ -201,7 +209,7 @@ def update_dashboard():
 
     # Clean the data
     cleaned_data = replace_none_with_empty_string(dashboard_data)
-    print("dashboard_data", cleaned_data)
+    # print("dashboard_data", cleaned_data)
     return jsonify(data=cleaned_data, select_list=select_list)
 
 @app.route('/dashboard_save', methods=['POST'])
@@ -228,28 +236,36 @@ def save_dashboard():
 
 @app.route('/metrics', methods=['GET'])
 def metrics():
-    # Convert stakeholder weights to dictionary and remove _id
-    stakeholder_weights_data = all_StakeholderWeights.to_dict(orient='records')
-    for item in stakeholder_weights_data:
-        item.pop('_id', None)
+    if 'is_admin' in session :
+        print(session)
+        if session['is_admin']:
+            print("ADMIN")
+            # Convert stakeholder weights to dictionary and remove _id
+            stakeholder_weights_data = all_StakeholderWeights.to_dict(orient='records')
+            for item in stakeholder_weights_data:
+                item.pop('_id', None)
 
-    print(stakeholder_weights_data)
-    
-    # Select necessary columns from MetricSelection
-    metric_selection_cleaned = all_MetricSelection.loc[:, ['Stakeholder', 'MetricCode']]
-    
-    # Merge with MetricMapping
-    integrated_table = pd.merge(all_MetricMapping, metric_selection_cleaned, on='MetricCode', how='inner')
-    integrated_table_data = integrated_table.to_dict(orient='records')
-    
-    # Remove _id from merged data
-    for item in integrated_table_data:
-        item.pop('_id', None)
-        
-    print(integrated_table_data)
-    
-    return render_template('metrics.html', stakeholder_weights=stakeholder_weights_data, integrated_table=integrated_table_data)
+            print(stakeholder_weights_data)
 
+            # Select necessary columns from MetricSelection
+            metric_selection_cleaned = all_MetricSelection.loc[:, ['Stakeholder', 'MetricCode']]
+
+            # Merge with MetricMapping
+            integrated_table = pd.merge(all_MetricMapping, metric_selection_cleaned, on='MetricCode', how='inner')
+            integrated_table_data = integrated_table.to_dict(orient='records')
+
+            # Remove _id from merged data
+            for item in integrated_table_data:
+                item.pop('_id', None)
+
+            print(integrated_table_data)
+
+            return render_template('metrics.html', stakeholder_weights=stakeholder_weights_data, integrated_table=integrated_table_data)
+        else:
+            print("USER")
+            return redirect(url_for('dashboard'))
+    else:
+        return redirect(url_for('dashboard'))
 
 @app.route('/save-metrics', methods=['POST'])
 def save_metrics():
@@ -337,7 +353,16 @@ def upload_file():
 
 @app.route('/users')
 def users():
-    return render_template('users.html', is_admin=session.get('is_admin', False))
+    if 'is_admin' in session :
+        print(session)
+        if session['is_admin']:
+            print("ADMIN")
+            return render_template('users.html', is_admin=session.get('is_admin', False))
+        else:
+            print("USER")
+            return redirect(url_for('dashboard'))
+    else:
+        return redirect(url_for('dashboard'))
 
 @app.route('/get_users', methods=['GET'])
 def get_users():
