@@ -115,12 +115,12 @@ body {
     transition: all 0.3s;
 }
 
-.upload-zone:hover {
+.upload-btn:hover {
     background-color: #ccfbf1;
     border-color: #059669;
 }
 
-.upload-zone.dragover {
+.upload-btn.dragover {
     background-color: #d1fae5;
 }
 

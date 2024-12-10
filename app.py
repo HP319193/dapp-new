@@ -146,6 +146,41 @@ document_schema = {
     "additionalProperties": False
 }
 
+metrics_schema={
+    "type": "object",
+    "properties": {
+        "MetricName": {"type": "string"},
+        "MetricCode": {"type": "string"},
+        "MetricDescription": {"type": "string"},
+        "Units": {"type": "string"},
+        "Source": {"type": "string"},
+        "Type": {"type": "string"},
+        "Scoring": {"type": "string"},
+        "Format": {"type": "string"},
+        "Stakeholder": {"type": "string"},
+    },
+    "additionalProperties": False
+}
+
+weights_schema={
+    "type": "object",
+    "properties": {
+        "Stakeholder": {"type": "string"},
+        "Industrials": {"type": "number"},
+        "Energy": {"type": "number"},
+        "Consumer Staples": {"type": "number"},
+        "Consumer Discretion": {"type": "number"},
+        "Utilities": {"type": "number"},
+        "Financials": {"type": "number"},
+        "Telecommunications": {"type": "number"},
+        "Health Care": {"type": "number"},
+        "Technology": {"type": "number"},
+        "Basic Materials": {"type": "number"},
+        "Real Estate": {"type": "number"},
+    },
+    "additionalProperties": False
+}
+
 # Routes
 @app.route('/')
 def sign_in():
@@ -301,7 +336,7 @@ def save_weight():
     data = request.get_json()
     try:
         for item in data:
-            MetricSelection_collection.update_one(
+            StakeholderWeights_collection.update_one(
                 {"Stakeholder": item["Stakeholder"]},  # Filter by unique key
                 {"$set": item},                      # Update the data
                 upsert=True                          # Insert if not found
@@ -331,7 +366,7 @@ def upload_file():
 
         # Handle CSV or Excel files
         elif file.filename.endswith('.csv') or file.filename.endswith(('.xls', '.xlsx')):
-            json_path = csv_to_json(file_path)  # Convert CSV/Excel to JSON
+            json_path = csv_to_json_data(file_path)  # Convert CSV/Excel to JSON
             with open(json_path, 'r') as f:
                 documents = json.load(f)
 
@@ -339,12 +374,94 @@ def upload_file():
             return jsonify({'error': 'Invalid file type. Only JSON, CSV, or Excel files are supported.'}), 400
 
         # Pass the documents directly to the function
-        errors = update_or_insert(documents)
+        errors = update_or_insert_data(documents)
 
         if len(errors) > 0:
             return jsonify({'message': 'File processed with errors', 'errors': len(errors)}), 200
         else:
             return jsonify({'message': 'File processed successfully'}), 200
+
+    except json.JSONDecodeError:
+        return jsonify({'error': 'Invalid JSON format'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@app.route('/uploadMetrics', methods=['POST'])
+def upload_metrics():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+    file.save(file_path)
+
+    try:
+        # Handle JSON files
+        if file.filename.endswith('.json'):
+            print("\nJSON\n")
+            with open(file_path, 'r') as f:
+                documents = json.load(f)
+
+        # Handle CSV or Excel files
+        elif file.filename.endswith('.csv') or file.filename.endswith(('.xls', '.xlsx')):
+            print("\nCSV\n")
+            json_path = csv_to_json_metrics(file_path)  # Convert CSV/Excel to JSON
+            print(json_path)
+            with open(json_path, 'r') as f:
+                documents = json.load(f)
+
+        else:
+            return jsonify({'error': 'Invalid file type. Only JSON, CSV, or Excel files are supported.'}), 400
+
+        print("before update")
+
+        # Pass the documents directly to the function
+        errors = update_or_insert_metrics(documents)
+
+        print('after update')
+
+        return jsonify({'message': 'File processed successfully'}), 200
+
+    except json.JSONDecodeError:
+        return jsonify({'error': 'Invalid JSON format'}), 400
+    except Exception as e:
+        print("e =>", e)
+        return jsonify({'error': str(e)}), 500
+    
+@app.route('/uploadWeights', methods=['POST'])
+def upload_weights():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+    file.save(file_path)
+
+    try:
+        # Handle JSON files
+        if file.filename.endswith('.json'):
+            with open(file_path, 'r') as f:
+                documents = json.load(f)
+
+        # Handle CSV or Excel files
+        elif file.filename.endswith('.csv') or file.filename.endswith(('.xls', '.xlsx')):
+            json_path = csv_to_json_weights(file_path)  # Convert CSV/Excel to JSON
+            with open(json_path, 'r') as f:
+                documents = json.load(f)
+
+        else:
+            return jsonify({'error': 'Invalid file type. Only JSON, CSV, or Excel files are supported.'}), 400
+
+        # Pass the documents directly to the function
+        errors = update_or_insert_weights(documents)
+
+        return jsonify({'message': 'File processed successfully'}), 200
 
     except json.JSONDecodeError:
         return jsonify({'error': 'Invalid JSON format'}), 400
@@ -557,7 +674,7 @@ def dashboard_json(company_name):
     return json_structure
 
 
-def update_or_insert(documents):
+def update_or_insert_data(documents):
     collection = db['data']
     print("start upload")
     # Ensure all required fields exist with default values if needed
@@ -621,7 +738,52 @@ def update_or_insert(documents):
         print("Failure upload", i)
     return error_list
 
-def convert_and_validate_types(item):
+def update_or_insert_metrics(documents):
+    MetricMapping_collection = db['MetricMapping']
+    MetricSelection_collection = db['MetricSelection']
+    first_json_keys = ["MetricName", "MetricCode", "MetricDescription", "Units", "Source", "Type", "Scoring", "Format"]
+    second_json_keys = ["MetricCode", "Stakeholder"]
+    
+    print("Start upload")
+    
+    try:
+        MetricMapping_json = [{key: item[key] for key in first_json_keys if key in item} for item in documents]
+        MetricSelection_json = [{key: item[key] for key in second_json_keys if key in item} for item in documents]
+
+        for item in MetricMapping_json:
+            MetricMapping_collection.update_one(
+                {"MetricCode": item["MetricCode"]},  # Filter by unique key
+                {"$set": item},                      # Update the data
+                upsert=True                          # Insert if not found
+            )
+
+        for item in MetricSelection_json:
+            MetricSelection_collection.update_one(
+                {"MetricCode": item["MetricCode"]},  # Filter by unique key
+                {"$set": item},                      # Update the data
+                upsert=True                          # Insert if not found
+            )
+        print("Metric upload OK")
+    except Exception as e:
+        return e
+
+
+def update_or_insert_weights(documents):
+    StakeholderWeights_collection = db['StakeholderWeights']
+    print("start upload")
+    # Ensure all required fields exist with default values if needed
+    try:
+        for item in documents:
+            StakeholderWeights_collection.update_one(
+                {"Stakeholder": item["Stakeholder"]},  # Filter by unique key
+                {"$set": item},                      # Update the data
+                upsert=True                          # Insert if not found
+            )
+        print("Weight upload OK")
+    except Exception as e:
+        return e
+
+def convert_and_validate_types_data(item):
     """ Convert string representations in item to appropriate types. """
     conversions = {
         "MarketCap": float,
@@ -652,19 +814,134 @@ def convert_and_validate_types(item):
 
     return item
 
-def csv_to_json(csv_file_path):
+def convert_and_validate_types_metrics(item):
+    """ Convert string representations in item to appropriate types. """
+    conversions = {
+        "MetricName": str,
+        "MetricCode": str,
+        "MetricDescription": str,
+        "Units": str,
+        "Source": str,
+        "Type": str,
+        "Scoring": str,
+        "Format": str,
+        "Stakeholder": str,
+    }
+
+    for key, convert in conversions.items():
+        try:
+            # Check if the key exists in the item
+            if key in item:
+                value = item[key].strip('"')  # Strip quotes from the string
+                if value == 'NA':  # Handle 'NA' as None
+                    item[key] = None
+                elif value != '':
+                    item[key] = convert(value)
+                else:
+                    item[key] = None
+            else:
+                # If the key is missing, set it to None
+                item[key] = None
+        except (ValueError, TypeError) as e:
+            print(f"Type conversion error for {key} ({item.get(key)}): {e}")
+    print('item =>', item)
+    return item
+
+
+def convert_and_validate_types_weights(item):
+    """ Convert string representations in item to appropriate types. """
+    conversions = {
+        "Stakeholder": str,
+        "Industrials": float,
+        "Energy": float,
+        "Consumer Staples": float,
+        "Consumer Discretion": float,
+        "Utilities": float,
+        "Financials": float,
+        "Telecommunications": float,
+        "Health Care": float,
+        "Technology": float,
+        "Basic Materials": float,
+        "Real Estate": float,
+    }
+
+    for key, convert in conversions.items():
+        try:
+            value = item[key].strip('"')  # Strip quotes from the string
+            if value == 'NA':
+                item[key] = None
+            elif value != '':
+                item[key] = convert(value)
+            else:
+                item[key] = None
+        except (ValueError, TypeError) as e:
+            print(f"Type conversion error for {key} ({item[key]}): {e}")
+
+    return item
+
+def csv_to_json_data(csv_file_path):
     """ Converts a CSV file to a JSON file and validates it against a JSON schema. """
     json_file_path = os.path.join(app.config['UPLOAD_FOLDER'], "output.json")
     # Read CSV data
     with open(csv_file_path, mode='r', encoding='utf-8') as csv_file:
         csv_reader = csv.DictReader(csv_file)
-        data = [convert_and_validate_types(row) for row in csv_reader]
+        data = [convert_and_validate_types_data(row) for row in csv_reader]
 
     # Validate each item against the JSON schema
     validated_data = []
     for item in data:
         try:
             validate(instance=item, schema=json_schema)
+            validated_data.append(item)
+        except ValidationError as e:
+            print(f"Validation error for item {item}: {e.message}")
+            continue
+    
+    # Write validated data to JSON
+    with open(json_file_path, mode='w', encoding='utf-8') as json_file:
+        json.dump(validated_data, json_file, indent=4)
+
+    print(f"Successfully converted and validated {csv_file_path} to {json_file_path}")
+    return json_file_path
+
+def csv_to_json_metrics(csv_file_path):
+    """ Converts a CSV file to a JSON file and validates it against a JSON schema. """
+    json_file_path = os.path.join(app.config['UPLOAD_FOLDER'], "output.json")
+    # Read CSV data
+    with open(csv_file_path, mode='r', encoding='utf-8') as csv_file:
+        csv_reader = csv.DictReader(csv_file)
+        data = [convert_and_validate_types_metrics(row) for row in csv_reader]
+
+    # Validate each item against the JSON schema
+    validated_data = []
+    for item in data:
+        try:
+            validate(instance=item, schema=metrics_schema)
+            validated_data.append(item)
+        except ValidationError as e:
+            print(f"Validation error for item {item}: {e.message}")
+            continue
+    
+    # Write validated data to JSON
+    with open(json_file_path, mode='w', encoding='utf-8') as json_file:
+        json.dump(validated_data, json_file, indent=4)
+
+    print(f"Successfully converted and validated {csv_file_path} to {json_file_path}")
+    return json_file_path
+
+def csv_to_json_weights(csv_file_path):
+    """ Converts a CSV file to a JSON file and validates it against a JSON schema. """
+    json_file_path = os.path.join(app.config['UPLOAD_FOLDER'], "output.json")
+    # Read CSV data
+    with open(csv_file_path, mode='r', encoding='utf-8') as csv_file:
+        csv_reader = csv.DictReader(csv_file)
+        data = [convert_and_validate_types_weights(row) for row in csv_reader]
+
+    # Validate each item against the JSON schema
+    validated_data = []
+    for item in data:
+        try:
+            validate(instance=item, schema=weights_schema)
             validated_data.append(item)
         except ValidationError as e:
             print(f"Validation error for item {item}: {e.message}")
