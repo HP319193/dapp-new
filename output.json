@@ -1,0 +1,123 @@
+[
+    {
+        "MetricName": "Energy intensity",
+        "MetricCode": "ENERGY_CONSUMP_INTEN_USD",
+        "MetricDescription": "Energy consumption normalised by $1m of sales",
+        "Units": "KWh/$m sales",
+        "Source": "MSCI",
+        "Type": "Numerical",
+        "Scoring": "Higher than sector average",
+        "Format": "#,###.#",
+        "Stakeholder": "Environment"
+    },
+    {
+        "MetricName": "Water intensity",
+        "MetricCode": "WATER_WD_INTEN_RECENT",
+        "MetricDescription": "Water withdrawl normalised by $1m of sales",
+        "Units": "m3/$m sales",
+        "Source": "MSCI",
+        "Type": "Numerical",
+        "Scoring": "Lower than sector average",
+        "Format": "#,###.#",
+        "Stakeholder": "Environment"
+    },
+    {
+        "MetricName": "Carbon intensity",
+        "MetricCode": "CARBON_EMISSIONS_SCOPE_12_INTEN",
+        "MetricDescription": "Scope 1&2 carbon emissions normalised by $1m of sales",
+        "Units": "tonnes/$m sales",
+        "Source": "MSCI",
+        "Type": "Numerical",
+        "Scoring": "Lower than sector average",
+        "Format": "#,###.#",
+        "Stakeholder": "Suppliers"
+    },
+    {
+        "MetricName": "SBTi committed",
+        "MetricCode": "HAS_COMMITTED_TO_SBTI_TARGET",
+        "MetricDescription": "Has the company committed to achieving an SBTi verified target",
+        "Units": "Y/N",
+        "Source": "MSCI",
+        "Type": "Binary",
+        "Scoring": "If Y",
+        "Format": "Text",
+        "Stakeholder": "Customers"
+    },
+    {
+        "MetricName": "SBTi approved",
+        "MetricCode": "HAS_SBTI_APPROVED_TARGET",
+        "MetricDescription": "Has the company achieved an SBTi verified target",
+        "Units": "Y/N",
+        "Source": "MSCI",
+        "Type": "Binary",
+        "Scoring": "If Y",
+        "Format": "Text",
+        "Stakeholder": "Customers"
+    },
+    {
+        "MetricName": "Biodiversity policy",
+        "MetricCode": "SUST_BIODIV_PROTECT_POL_VALUE",
+        "MetricDescription": "Has the company published a policy focused on biodiversity protection",
+        "Units": "Y/N",
+        "Source": "MSCI",
+        "Type": "Binary",
+        "Scoring": "If N",
+        "Format": "Text",
+        "Stakeholder": "Communities"
+    },
+    {
+        "MetricName": "Targeted 2030 emissions change",
+        "MetricCode": "TARGET_SUMMARY_CUM_CHANGE_2030",
+        "MetricDescription": "Change in scope 1&2 carbon emissions through 2030 based on public targets",
+        "Units": "Pct change",
+        "Source": "MSCI",
+        "Type": "Numerical",
+        "Scoring": "Lower than global average",
+        "Format": "#,###.#",
+        "Stakeholder": "Employees"
+    },
+    {
+        "MetricName": "Net zero status",
+        "MetricCode": "SBTI_NET_ZERO_TARGET_STATUS",
+        "MetricDescription": "Has the company committed to achieving net zero emissions",
+        "Units": "Type",
+        "Source": "MSCI",
+        "Type": "Text",
+        "Scoring": "If Y",
+        "Format": "Text",
+        "Stakeholder": "Governance"
+    },
+    {
+        "MetricName": "Average Employee Length of service",
+        "MetricCode": "Average Employee Length of service",
+        "MetricDescription": "Average length of employee tenure",
+        "Units": "Years",
+        "Source": "Refinitiv",
+        "Type": "Numerical",
+        "Scoring": "Higher than regional average",
+        "Format": "#,###.#",
+        "Stakeholder": "Employees"
+    },
+    {
+        "MetricName": "Microfinance Impact Investment",
+        "MetricCode": "Microfinance Impact Investment",
+        "MetricDescription": "Investment in microfinance relative to sales",
+        "Units": "Pct of sales",
+        "Source": "Refinitiv",
+        "Type": "Numerical",
+        "Scoring": "Higher than sector average",
+        "Format": "#,###.#%",
+        "Stakeholder": "Communities"
+    },
+    {
+        "MetricName": "Supplier ESG training",
+        "MetricCode": "Supplier ESG training",
+        "MetricDescription": "Whether the company provides training to suppliers on environmental and social issues",
+        "Units": "Y/N",
+        "Source": "Refinitiv",
+        "Type": "Binary",
+        "Scoring": "If Y",
+        "Format": "Text",
+        "Stakeholder": "Suppliers"
+    }
+]

@@ -217,6 +217,8 @@ def logout():
 def dashboard():
     if 'user' in session:
         print(session)
+        data_collection=db['data']
+        all_data = pd.DataFrame(list(data_collection.find()))
         company_name_list=all_data['Company']
         return render_template(
             'dashboard.html', 
@@ -275,6 +277,12 @@ def metrics():
         print(session)
         if session['is_admin']:
             print("ADMIN")
+            MetricMapping_collection=db['MetricMapping']
+            MetricSelection_collection=db['MetricSelection']
+            StakeholderWeights_collection=db['StakeholderWeights']
+            all_MetricMapping = pd.DataFrame(list(MetricMapping_collection.find()))
+            all_MetricSelection = pd.DataFrame(list(MetricSelection_collection.find()))
+            all_StakeholderWeights = pd.DataFrame(list(StakeholderWeights_collection.find()))
             # Convert stakeholder weights to dictionary and remove _id
             stakeholder_weights_data = all_StakeholderWeights.to_dict(orient='records')
             for item in stakeholder_weights_data:
@@ -305,8 +313,12 @@ def metrics():
 @app.route('/save-metrics', methods=['POST'])
 def save_metrics():
     data = request.get_json()
+    print(data)
     first_json_keys = ["MetricName", "MetricCode", "MetricDescription", "Units", "Source", "Type", "Scoring", "Format"]
     second_json_keys = ["MetricCode", "Stakeholder"]
+
+    MetricMapping_collection.drop()
+    MetricSelection_collection.drop()
 
     # Split data
     try:
@@ -327,7 +339,7 @@ def save_metrics():
                 upsert=True                          # Insert if not found
             )
         print("Metric upload OK")
-        return jsonify({'message': 'OK'}), 200
+        return redirect(url_for('metrics'))
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -420,6 +432,7 @@ def upload_metrics():
 
         # Pass the documents directly to the function
         errors = update_or_insert_metrics(documents)
+        print(errors)
 
         print('after update')
 
@@ -460,7 +473,7 @@ def upload_weights():
 
         # Pass the documents directly to the function
         errors = update_or_insert_weights(documents)
-
+        print(errors)
         return jsonify({'message': 'File processed successfully'}), 200
 
     except json.JSONDecodeError:
@@ -745,6 +758,9 @@ def update_or_insert_metrics(documents):
     second_json_keys = ["MetricCode", "Stakeholder"]
     
     print("Start upload")
+    
+    MetricMapping_collection.drop()
+    MetricSelection_collection.drop()
     
     try:
         MetricMapping_json = [{key: item[key] for key in first_json_keys if key in item} for item in documents]
