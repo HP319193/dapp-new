@@ -1,0 +1,12 @@
+MetricName,MetricCode,MetricDescription,Units,Source,Type,Scoring,Format,Stakeholder
+Energy intensity,ENERGY_CONSUMP_INTEN_USD,Energy consumption normalised by $1m of sales,KWh/$m sales,MSCI,Numerical,Higher than sector average,"#,###.#",Environment
+Water intensity,WATER_WD_INTEN_RECENT,Water withdrawl normalised by $1m of sales,m3/$m sales,MSCI,Numerical,Lower than sector average,"#,###.#",Environment
+Carbon intensity,CARBON_EMISSIONS_SCOPE_12_INTEN,Scope 1&2 carbon emissions normalised by $1m of sales,tonnes/$m sales,MSCI,Numerical,Lower than sector average,"#,###.#",Suppliers
+SBTi committed,HAS_COMMITTED_TO_SBTI_TARGET,Has the company committed to achieving an SBTi verified target,Y/N,MSCI,Binary,If Y,Text,Customers
+SBTi approved,HAS_SBTI_APPROVED_TARGET,Has the company achieved an SBTi verified target,Y/N,MSCI,Binary,If Y,Text,Customers
+Biodiversity policy,SUST_BIODIV_PROTECT_POL_VALUE,Has the company published a policy focused on biodiversity protection,Y/N,MSCI,Binary,If N,Text,Communities
+Targeted 2030 emissions change,TARGET_SUMMARY_CUM_CHANGE_2030,Change in scope 1&2 carbon emissions through 2030 based on public targets,Pct change,MSCI,Numerical,Lower than global average,"#,###.#",Employees
+Net zero status,SBTI_NET_ZERO_TARGET_STATUS,Has the company committed to achieving net zero emissions,Type,MSCI,Text,If Y,Text,Governance
+Average Employee Length of service,Average Employee Length of service,Average length of employee tenure,Years,Refinitiv,Numerical,Higher than regional average,"#,###.#",Employees
+Microfinance Impact Investment,Microfinance Impact Investment,Investment in microfinance relative to sales,Pct of sales,Refinitiv,Numerical,Higher than sector average,"#,###.#%",Communities
+Supplier ESG training,Supplier ESG training,Whether the company provides training to suppliers on environmental and social issues,Y/N,Refinitiv,Binary,If Y,Text,Suppliers
