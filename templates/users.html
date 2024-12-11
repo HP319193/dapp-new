@@ -37,6 +37,7 @@
                             <th>Team</th>
                             <th>Password</th>
                             <th>Is Admin</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                 <tbody id="user-table"></tbody>
@@ -78,42 +79,6 @@
                 $("#user-table input[type='checkbox']").prop("disabled", false);
             } else {
                 $("#user-table input[type='checkbox']").prop("disabled", true);
-            }
-
-            // Load user data
-            function loadUsers() {
-                $.ajax({
-                    url: '/get_users',
-                    type: 'GET',
-                    success: function(data) {
-                        console.log("get_users");
-                        console.log(data);
-                        console.log(data['users']);
-
-                        const user_rows = data['users'].map(user => `
-                            <tr>
-                                <td>${user.username || ''}</td>
-                                <td>${user.analyst || ''}</td>
-                                <td>${user.team || ''}</td>
-                                <td>${user.password || ''}</td>
-                                <td><input type="checkbox" ${user.is_admin ? 'checked' : ''} disabled></td>
-                            </tr>
-                        `).join('');
-                        $("#user-table").html(user_rows);
-
-                        const team_rows = Array.isArray(data['teams_list']) ? data['teams_list'].map(team => `
-                            <div onclick="selectItem(this)">${team}</div>
-                        `).join('') : '';
-
-                        $("#dropdown").html(team_rows);
-
-                        console.log("OK");
-                    },
-                    error: function(jqXHR, textStatus, errorThrown) {
-                        console.error('Error fetching users:', textStatus, errorThrown);
-                    }
-                });
-
             }
 
             console.log("reload")
@@ -193,6 +158,103 @@
                 }
             });
         });
+
+        // Load user data
+        function loadUsers() {
+            $.ajax({
+                url: '/get_users',
+                type: 'GET',
+                success: function(data) {
+                    console.log("get_users");
+                    console.log(data);
+                    console.log(data['users']);
+
+                    const user_rows = data['users'].map(user => `
+                        <tr>
+                            <td>${user.username || ''}</td>
+                            <td>${user.analyst || ''}</td>
+                            <td>${user.team || ''}</td>
+                            <td>${user.password || ''}</td>
+                            <td><input type="checkbox" ${user.is_admin ? 'checked' : ''} disabled></td>
+                            <td>
+                                <button class="change-metric-btn" onclick="passwordDefault(this)" title="Password default">
+                                    <i class="bi bi-pencil-square"></i> Password default
+                                </button>
+
+                                <button class="delete-btn" onclick="deleteRow(this)" title="Delete Row">
+                                    <i class="bi bi-trash-fill"></i> Delete
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('');
+                    $("#user-table").html(user_rows);
+
+                    const team_rows = Array.isArray(data['teams_list']) ? data['teams_list'].map(team => `
+                        <div onclick="selectItem(this)">${team}</div>
+                    `).join('') : '';
+
+                    $("#dropdown").html(team_rows);
+
+                    console.log("OK");
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error('Error fetching users:', textStatus, errorThrown);
+                }
+            });
+
+        }
+
+        function passwordDefault(button) {
+            data = $(button).closest('tr');
+            console.log(data);
+            username = data.find('td:first').text();
+
+            $.ajax({
+                url: '/password_default',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    username
+                }),
+                success: function (response) {
+                    if (response.success) {
+                        loadUsers();
+                        alert(response.message);
+                    } else {
+                        alert(response.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alert("An error occurred: " + error);
+                }
+            });
+        }
+    
+        function deleteRow(button) {
+            data = $(button).closest('tr');
+            console.log(data);
+            firstTdText = data.find('td:first').text();
+
+            $.ajax({
+                url: '/delete_user',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    username
+                }),
+                success: function (response) {
+                    if (response.success) {
+                        loadUsers();
+                        alert(response.message);
+                    } else {
+                        alert(response.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    alert("An error occurred: " + error);
+                }
+            });
+        }
     </script>
 </body>
 

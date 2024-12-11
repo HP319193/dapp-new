@@ -500,6 +500,8 @@ def get_users():
     expected_columns = ['username', 'analyst', 'team', 'password', 'is_admin']
     available_columns = [col for col in expected_columns if col in all_users.columns]
 
+    users_collection = db['users']
+    all_users = pd.DataFrame(list(users_collection.find()))
     # Filter the DataFrame based on existing columns
     users = all_users[available_columns].copy()
 
@@ -523,7 +525,6 @@ def get_users():
     print(teams_list)
 
     return jsonify({"users": users_dict, "teams_list": teams_list})
-
 
 @app.route('/create_user', methods=['POST'])
 def create_user():
@@ -553,6 +554,45 @@ def create_user():
     global all_users
     all_users = pd.DataFrame(list(users_collection.find()))
     return jsonify({'success': True, 'message': "User created successfully."})
+
+@app.route('/password_default', methods=['POST'])
+def password_default():
+    try:
+        # Get the username from the request
+        username = request.json.get('username')
+
+        # Update the document
+        result = users_collection.update_one(
+            {'username': username},
+            {'$set': {'password': '123456789'}}
+        )
+
+        if result.matched_count > 0:
+            return jsonify({'message': 'Password updated successfully'}), 200
+        else:
+            return jsonify({'error': 'User not found'}), 404
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/delete_user', methods=['POST'])
+def delete_user():
+    try:
+        # Get the username from the request
+        username = request.json.get('username')
+
+        # Delete the user
+        deleted_count = users_collection.delete_one({'username': username}).deleted_count
+
+        if deleted_count > 0:
+            return jsonify({'message': f'User {username} deleted successfully'}), 200
+        else:
+            return jsonify({'error': f'User {username} not found'}), 404
+
+    except Exception as e:
+        # Log the error
+        app.logger.error(f"Error deleting user {username}: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 def dashboard_json(company_name):
     company_entry = all_data[all_data['Company'] == company_name].iloc[0]  # Select first row as an example
