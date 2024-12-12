@@ -13,7 +13,7 @@
         // Backend-injected data
         const stakeholderWeightsData = {{ stakeholder_weights|tojson }};
         const integratedTableData = {{ integrated_table|tojson }};
-
+        stakeholderOptions= stakeholderWeightsData.map(item => item.Stakeholder);
         // Populate Metrics Table
         function populateMetricsTable() {
             const $metricsTableBody = $('#metrics-table tbody');
@@ -53,22 +53,17 @@
                 $stakeholdersTableBody.append($newRow);
             });
         }
-
         // Add Metrics Row
         function addMetricsRow() {
             const $newRow = $('<tr></tr>');
             const columns = ['MetricName', 'MetricCode', 'MetricDescription', 'Units', 'Source', 'Type', 'Scoring', 'Format', 'Stakeholder'];
             columns.forEach(col => {
                 if (col === 'Stakeholder') {
-                    $newRow.append(`
-                        <td>
-                            <select>
-                                <option value="high">High</option>
-                                <option value="medium">Medium</option>
-                                <option value="low" selected>Low</option>
-                            </select>
-                        </td>
-                    `);
+                    const $select = $('<select></select>');
+                    stakeholderOptions.forEach(option => {
+                        $select.append(`<option value="${option}">${option}</option>`);
+                    });
+                    $newRow.append(`<td></td>`).find('td:last').append($select);
                 } else {
                     $newRow.append(`<td><input type="text" placeholder="${col}"></td>`);
                 }
@@ -262,16 +257,32 @@
 
             if (!isEditing) {
                 $row.find("td").each(function (index) {
-                    if (index < 9) { // Exclude Actions column
+                    if (index < 8) { // Exclude Actions column
                         const text = $(this).text();
                         $(this).html(`<input type="text" value="${text}">`);
+                    }
+                    if (index === 8) { // Exclude Actions column
+                        const text = $(this).text();
+                        const $select = $('<select></select>');
+
+                        // Populate the select element with options
+                        stakeholderOptions.forEach(option => {
+                            $select.append(`<option value="${option}">${option}</option>`);
+                        });
+                        $select.val(text); // Set selected value to match existing text
+                        $(this).html($select);
+                        
                     }
                 });
                 $(button).replaceWith('<button class="check-btn" onclick="toggleMetricsRowEdit(this)"><i class="bi bi-check-square-fill"></i></button>');
             } else {
                 $row.find("td").each(function (index) {
-                    if (index < 9) { // Exclude Actions column
+                    if (index < 8) { // Exclude Actions column
                         const value = $(this).find("input").val();
+                        $(this).html(value);
+                    }
+                    if (index === 8) { // Exclude Actions column
+                        const value = $(this).find("select").val();
                         $(this).html(value);
                     }
                 });
