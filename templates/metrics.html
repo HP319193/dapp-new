@@ -13,7 +13,7 @@
         // Backend-injected data
         const stakeholderWeightsData = {{ stakeholder_weights|tojson }};
         const integratedTableData = {{ integrated_table|tojson }};
-
+        stakeholderOptions= stakeholderWeightsData.map(item => item.Stakeholder);
         // Populate Metrics Table
         function populateMetricsTable() {
             const $metricsTableBody = $('#metrics-table tbody');
@@ -46,34 +46,30 @@
                     <button class="change-stakeholder-btn" onclick="toggleWeightsRowEdit(this)" title="Edit Row">
                         <i class="bi bi-pencil-square"></i> Edit
                     </button>
+                    <button class="delete-btn" onclick="deleteRow(this)" title="Delete Row">
+                        <i class="bi bi-trash-fill"></i> Delete
+                    </button>
                 </td>`);
                 $stakeholdersTableBody.append($newRow);
             });
         }
-
         // Add Metrics Row
         function addMetricsRow() {
             const $newRow = $('<tr></tr>');
             const columns = ['MetricName', 'MetricCode', 'MetricDescription', 'Units', 'Source', 'Type', 'Scoring', 'Format', 'Stakeholder'];
             columns.forEach(col => {
-                if (col === 'Scoring') {
-                    $newRow.append(`
-                        <td>
-                            <select>
-                                <option value="Low">Low</option>
-                                <option value="Medium">Medium</option>
-                                <option value="High">High</option>
-                            </select>
-                        </td>
-                    `);
+                if (col === 'Stakeholder') {
+                    const $select = $('<select></select>');
+                    stakeholderOptions.forEach(option => {
+                        $select.append(`<option value="${option}">${option}</option>`);
+                    });
+                    $newRow.append(`<td></td>`).find('td:last').append($select);
                 } else {
                     $newRow.append(`<td><input type="text" placeholder="${col}"></td>`);
                 }
             });
             $newRow.append(`<td class="actions">
-                                <button class="change-metric-btn" onclick="toggleMetricsRowEdit(this)" title="Edit Row">
-                                    <i class="bi bi-pencil-square"></i> Edit
-                                </button>
+                                <button class="check-btn" onclick="toggleMetricsRowEdit(this)"><i class="bi bi-check-square-fill"></i></button>
                                 <button class="delete-btn" onclick="deleteRow(this)" title="Delete Row">
                                     <i class="bi bi-trash-fill"></i> Delete
                                 </button>
@@ -81,6 +77,33 @@
             
             $('#metrics-table tbody').append($newRow);
         }
+
+
+        // Add Weights Row
+        function addWeightsRow() {
+            console.log("add weights")
+            const $newRow = $('<tr></tr>');
+            const columns = ['Stakeholder', 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1];
+            columns.forEach(col => {
+                console.log(col)
+                if (col === 'Stakeholder') {
+                    $newRow.append(`
+                        <td><input type="text" placeholder="${col}"></td>
+                    `);
+                } else {
+                    $newRow.append(`<td><input type="number" id="float-input" name="float-input" min="0" step="0.1" max="1" placeholder="${col}" required></td>`);
+                }
+            });
+            $newRow.append(`<td class="actions">
+                                <button class="check-btn" onclick="toggleWeightsRowEdit(this)"><i class="bi bi-check-square-fill"></i></button>
+                                <button class="delete-btn" onclick="deleteRow(this)" title="Delete Row">
+                                    <i class="bi bi-trash-fill"></i> Delete
+                                </button>
+                            </td>`);
+            
+            $('#weights-table tbody').append($newRow);
+        }
+
 
         // Delete Row
         function deleteRow(button) {
@@ -234,16 +257,32 @@
 
             if (!isEditing) {
                 $row.find("td").each(function (index) {
-                    if (index < 9) { // Exclude Actions column
+                    if (index < 8) { // Exclude Actions column
                         const text = $(this).text();
                         $(this).html(`<input type="text" value="${text}">`);
+                    }
+                    if (index === 8) { // Exclude Actions column
+                        const text = $(this).text();
+                        const $select = $('<select></select>');
+
+                        // Populate the select element with options
+                        stakeholderOptions.forEach(option => {
+                            $select.append(`<option value="${option}">${option}</option>`);
+                        });
+                        $select.val(text); // Set selected value to match existing text
+                        $(this).html($select);
+                        
                     }
                 });
                 $(button).replaceWith('<button class="check-btn" onclick="toggleMetricsRowEdit(this)"><i class="bi bi-check-square-fill"></i></button>');
             } else {
                 $row.find("td").each(function (index) {
-                    if (index < 9) { // Exclude Actions column
+                    if (index < 8) { // Exclude Actions column
                         const value = $(this).find("input").val();
+                        $(this).html(value);
+                    }
+                    if (index === 8) { // Exclude Actions column
+                        const value = $(this).find("select").val();
                         $(this).html(value);
                     }
                 });
@@ -255,21 +294,26 @@
 
         // Edit function for Weights Table
         function toggleWeightsRowEdit(button) {
+            console.log("toggleWeightsRowEdit")
             const $row = $(button).closest("tr");
             const isEditing = $row.find(".check-btn").length > 0;
+            console.log(isEditing)
 
             if (!isEditing) {
                 $row.find("td").each(function (index) {
                     if (index < 12 && index>0) { // Exclude Actions column (adjusted for weights table)
                         const text = $(this).text();
-                        $(this).html(`<input type="text" value="${text}">`);
+                        $(this).html(`<input type="number" id="float-input" name="float-input" min="0" step="0.1" max="1" value="${text}" required>`);
                     }
                 });
-                $(button).replaceWith('<button class="check-btn" onclick="toggleWeightsRowEdit(this)"><i class="bi bi-check-square-fill"></i></button>');
+                $(button).replaceWith(`<button class="check-btn" onclick="toggleWeightsRowEdit(this)">
+                                            <i class="bi bi-check-square-fill"></i>
+                                        </button>`);
             } else {
                 $row.find("td").each(function (index) {
-                    if (index < 12 && index>0) { // Exclude Actions column (adjusted for weights table)
+                    if (index < 12) { // Exclude Actions column (adjusted for weights table)
                         const value = $(this).find("input").val();
+                        console.log(value)
                         $(this).html(value);
                     }
                 });
@@ -357,6 +401,7 @@
                 </tbody>
             </table>
             <div class="actions">
+                <button class="add-row-btn" onclick="addWeightsRow()">Add New Row</button>
                 <button id="save-weight-btn">Save Weights</button>
             </div>
         </div>
